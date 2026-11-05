@@ -154,24 +154,42 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       ws.disconnect();
     };
   }, [ready, settings, paused, version]);
-  const saveSettings = async (next: Settings) => {
+  
+const saveSettings = async (next: Settings) => {
+  try {
+    // Update the UI mode immediately
+    setSettings(next);
+
+    // Try saving to database, but don't block mode switching
     try {
       const response = await fetch("/api/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(next),
       });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error);
-      setSettings(next);
-      setDatabase(true);
-      notify("Settings saved");
-      return true;
-    } catch (e) {
-      notify(e instanceof Error ? e.message : "Unable to save settings");
-      return false;
+
+      if (response.ok) {
+        setDatabase(true);
+      } else {
+        setDatabase(false);
+      }
+    } catch {
+      setDatabase(false);
     }
-  };
+
+    notify(
+      next.mode === "live"
+        ? "Switched to Live Mode"
+        : "Switched to Demo Mode"
+    );
+
+    return true;
+  } catch {
+    notify("Unable to change mode");
+    return false;
+  }
+};
+
   const updateAlert = async (id: string, state: Alert["state"]) => {
     try {
       if (settings.mode === "live")
