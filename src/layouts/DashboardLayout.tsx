@@ -37,7 +37,6 @@ const icons: Record<string, typeof Activity> = {
   Activity,
   Bell,
   Boxes,
-  Boxes,
   ChartNoAxesCombined,
   Cpu,
   FileChartColumn,
