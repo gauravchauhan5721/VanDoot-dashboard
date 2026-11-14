@@ -139,6 +139,7 @@ export function DashboardLayout({
                 return (
                   <a
                     href={`#${id}`}
+                    aria-current={page === id ? "page" : undefined}
                     className={`nav-item ${page === id ? "active" : ""}`}
                     key={id}
                   >
