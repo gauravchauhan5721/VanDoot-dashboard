@@ -56,6 +56,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   }, [toast]);
   useEffect(() => {
     let active = true;
+    if (process.env.NEXT_PUBLIC_STATIC_PREVIEW === "1") {
+      setReady(true);
+      return;
+    }
     Promise.all([
       fetch("/api/settings").then(async (r) => {
         if (!r.ok) throw new Error();
@@ -100,6 +104,17 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   }, [settings.theme]);
   useEffect(() => {
     if (!ready) return;
+    if (
+      process.env.NEXT_PUBLIC_STATIC_PREVIEW === "1" &&
+      settings.mode === "live"
+    ) {
+      setData(emptySnapshot());
+      setError(
+        "Hosted preview has no local gateway backend. Run the repository locally to connect hardware.",
+      );
+      setLoading(false);
+      return;
+    }
     let active = true;
     let busy = false;
     if (!demo.current) demo.current = new DemoDataService(settings);
@@ -189,6 +204,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     try {
       // Update the UI mode immediately
       setSettings(next);
+      if (process.env.NEXT_PUBLIC_STATIC_PREVIEW === "1") {
+        notify("Preview preferences changed for this session; not persisted.");
+        return true;
+      }
 
       // Try saving to database, but don't block mode switching
       try {

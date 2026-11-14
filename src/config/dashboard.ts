@@ -14,48 +14,35 @@ export const defaultSettings: Settings = {
 };
 export const navigation = [
   {
-    section: "FOREST PROTECTION",
-    items: [
-      ["fire", "Fire & Smoke", "Activity"],
-      ["camera", "Camera Detections", "Boxes"],
-      ["audio", "Audio Analysis", "Radio"],
-      ["thermal", "Thermal Monitoring", "Activity"],
-      ["fusion", "Threat Verification", "Sparkles"],
-      ["incidents", "Incident Review", "Bell"],
-      ["rangers", "Ranger Registry", "Cpu"],
-      ["models", "Model Registry", "Sparkles"],
-      ["integration", "Hardware Integration", "SlidersHorizontal"],
-    ],
-  },
-  {
-    section: "WORKSPACE",
+    section: "OPERATIONS",
     items: [
       ["overview", "Overview", "LayoutDashboard"],
-      ["live-monitoring", "Live Monitoring", "Radio"],
       ["nodes", "Nodes", "Cpu"],
-      ["network", "LoRaMesh Network", "Network"],
-      ["simulation", "3D Simulation", "Boxes"],
-      ["gateway", "Gateway", "Server"],
-      ["sensors", "Sensors", "Activity"],
-    ],
-  },
-  {
-    section: "INSIGHTS",
-    items: [
-      ["analytics", "Analytics", "ChartNoAxesCombined"],
-      ["alerts", "Alerts", "Bell"],
-      ["map", "Map & Locations", "MapPin"],
-      ["intelligence", "AI / Intelligence", "Sparkles"],
-    ],
-  },
-  {
-    section: "MANAGEMENT",
-    items: [
-      ["device-control", "Device Control", "SlidersHorizontal"],
-      ["data-logs", "Data Logs", "Logs"],
-      ["reports", "Reports", "FileChartColumn"],
-      ["system-health", "System Health", "HeartPulse"],
+      ["live-monitoring", "Monitoring", "Radio"],
+      ["incidents", "Incidents", "Bell"],
+      ["map", "Forest Map", "MapPin"],
+      ["network", "Network", "Network"],
+      ["reports", "History & Reports", "FileChartColumn"],
       ["settings", "Settings", "Settings"],
+    ],
+  },
+  {
+    section: "EVIDENCE & INTEGRATION",
+    items: [
+      ["camera", "Camera evidence", "Boxes"],
+      ["audio", "Audio analysis", "Radio"],
+      ["thermal", "Thermal frames", "Activity"],
+      ["integration", "Hardware setup", "SlidersHorizontal"],
+      ["models", "Model registry", "Sparkles"],
+    ],
+  },
+  {
+    section: "EXISTING TOOLS",
+    items: [
+      ["analytics", "Sensor analytics", "ChartNoAxesCombined"],
+      ["data-logs", "Telemetry logs", "Logs"],
+      ["simulation", "3D simulation", "Boxes"],
+      ["system-health", "System health", "HeartPulse"],
     ],
   },
 ];
@@ -72,7 +59,7 @@ export const pageDescriptions: Record<string, string> = {
   overview: "Your entire network. One clear picture.",
   "live-monitoring": "A real-time pulse of your distributed sensor network.",
   nodes: "Monitor, manage, and explore your connected devices.",
-  network: "Every connection, every hop. Your LoRaMesh at a glance.",
+  network: "Reported connectivity for the Wi-Fi / local-network prototype.",
   simulation: "Explore the forest surveillance network in interactive 3D.",
   gateway: "The bridge between your devices and your intelligence.",
   sensors: "Environmental intelligence from every corner of your network.",

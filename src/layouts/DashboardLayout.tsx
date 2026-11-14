@@ -29,6 +29,7 @@ import {
   CalendarDays,
   RefreshCw,
 } from "lucide-react";
+import { fixtures } from "@/features/forest/OperationsWorkspace";
 import { navigation, pageDescriptions } from "@/config/dashboard";
 import { useDashboard } from "@/hooks/useDashboard";
 import { download } from "@/utils/format";
@@ -92,7 +93,7 @@ export function DashboardLayout({
     setMobile(false);
   }, [view]);
   const results = [
-    ...data.nodes.map((n) => ({
+    ...(settings.mode === "demo" ? fixtures : data.nodes).map((n) => ({
       id: `nodes/${n.id}`,
       name: `${n.id} · ${n.name}`,
       category: "Device",
@@ -169,7 +170,7 @@ export function DashboardLayout({
             <p>
               {settings.mode === "demo"
                 ? "Explore freely. No hardware needed."
-                : "Connected to your configured backend."}
+                : "Live mode selected. Check gateway status."}
             </p>
             <a href="#settings">
               {settings.mode === "demo"
@@ -272,12 +273,11 @@ export function DashboardLayout({
             </div>
             <span className="topbar-divider" />
             <a
-              href="#alerts"
+              href="#incidents"
               className="notification-button"
-              aria-label={`${alertCount} active alerts`}
+              aria-label="Open incident review"
             >
               <Bell size={18} />
-              {alertCount > 0 && <i />}
             </a>
             <button
               className="avatar"
@@ -297,7 +297,11 @@ export function DashboardLayout({
                   {page === "overview" && (
                     <span className={`system-pill ${error ? "error" : ""}`}>
                       <i />
-                      {error ? "Connection unavailable" : "System operational"}
+                      {error
+                        ? "Connection unavailable"
+                        : settings.mode === "demo"
+                          ? "Synthetic demo"
+                          : "Check source freshness"}
                     </span>
                   )}
                 </div>
@@ -332,7 +336,7 @@ export function DashboardLayout({
                   }}
                 >
                   <ArrowDownToLine size={14} />
-                  Export data
+                  Export telemetry
                 </button>
               </div>
             </div>
@@ -349,7 +353,12 @@ export function DashboardLayout({
               </span>
               <span>
                 <RefreshCw size={11} className={loading ? "spin" : ""} />
-                Updated {loading ? "…" : "just now"}
+                Snapshot{" "}
+                {loading
+                  ? "loading…"
+                  : data.timestamp
+                    ? new Date(data.timestamp).toLocaleTimeString()
+                    : "unavailable"}
                 <span className="dot-separator">·</span>Every{" "}
                 {settings.refreshInterval}s
               </span>

@@ -1,0 +1,362 @@
+.ops {
+  --ops-accent: #b7df82;
+}
+.ops h2 {
+  font-size: 21px;
+  margin: 0 0 8px;
+  letter-spacing: -0.5px;
+}
+.ops p {
+  line-height: 1.7;
+}
+.ops-context,
+.ops-row,
+.ops-toolbar,
+.ops-network-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.ops-context {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--muted);
+  padding: 0 0 20px;
+  border-bottom: 1px solid var(--border);
+}
+.ops-context > span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ops-context b {
+  color: var(--amber);
+  font-weight: 500;
+}
+.ops-toolbar {
+  padding: 20px 0;
+}
+.ops label {
+  display: grid;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  margin: 8px 0;
+}
+.ops input:not([type="checkbox"]),
+.ops select,
+.ops textarea {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 10px 12px;
+  max-width: 100%;
+}
+.ops button:focus-visible,
+.ops a:focus-visible,
+.ops input:focus-visible,
+.ops select:focus-visible,
+.ops textarea:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 4px;
+}
+.ops-muted {
+  color: var(--muted);
+  font-size: 12px;
+}
+.ops-intro {
+  background: #1d2a22;
+  border: 1px solid #344638;
+  padding: 28px 30px;
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.ops-intro h2 {
+  font-size: 30px;
+  margin-top: 12px;
+}
+.ops-intro p {
+  color: #aebfaf;
+  margin-bottom: 0;
+}
+.ops-intro svg {
+  color: #b7df82;
+}
+.ops-kicker,
+.ops-id {
+  font-size: 10px;
+  letter-spacing: 1.3px;
+  color: var(--green);
+}
+.ops-stats {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+  margin: 20px 0;
+}
+.ops-stats > div {
+  border: 1px solid var(--border);
+  padding: 18px;
+  background: var(--panel);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+}
+.ops-stats span {
+  color: var(--muted-light);
+  font-size: 11px;
+}
+.ops-stats strong {
+  font-size: 28px;
+  font-weight: 500;
+}
+.ops-stats small {
+  font-size: 10px;
+  color: var(--muted);
+}
+.ops-columns {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 20px;
+}
+.ops-empty {
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  padding: 25px;
+  color: var(--muted);
+}
+.ops-empty strong {
+  color: var(--text);
+}
+.ops-empty p {
+  max-width: 480px;
+  margin: 0;
+}
+.ops-empty > svg {
+  color: var(--green);
+  width: 30px;
+  height: 30px;
+}
+.ops-details p {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid var(--border);
+  padding: 10px 0;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.ops-details strong {
+  font-weight: 500;
+  color: var(--text);
+  text-align: right;
+}
+.ops-details {
+  margin-bottom: 18px;
+}
+.ops-section {
+  margin: 28px 0 16px;
+}
+.ops-section p {
+  margin: 0;
+}
+.ops-node-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+.ops-node {
+  border: 1px solid var(--border);
+  padding: 20px;
+  border-radius: 8px;
+  background: var(--panel);
+  transition: border-color 0.15s;
+}
+.ops-node:hover {
+  border-color: var(--green);
+}
+.ops-node h3 {
+  font-size: 17px;
+  margin: 23px 0 8px;
+}
+.ops-node p {
+  font-size: 11px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.ops-capabilities {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  min-height: 50px;
+  margin-top: 18px;
+}
+.ops-capabilities span {
+  background: var(--panel-raised);
+  border: 1px solid var(--border);
+  padding: 4px 7px;
+  border-radius: 4px;
+  font-size: 10px;
+  height: 24px;
+  color: var(--muted-light);
+}
+.ops-node-foot {
+  border-top: 1px solid var(--border);
+  padding-top: 13px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--muted);
+}
+.ops-node-foot b {
+  color: var(--text);
+  margin-left: 5px;
+}
+.ops-notice {
+  font-size: 11px;
+  color: var(--muted);
+  padding: 15px 0;
+}
+.ops-incident {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 0;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  cursor: pointer;
+}
+.ops-incident > span:nth-child(2) {
+  flex: 1;
+}
+.ops-incident strong,
+.ops-incident small {
+  display: block;
+}
+.ops-incident small {
+  margin-top: 7px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.ops-alert-icon {
+  padding: 10px;
+  background: #382e20;
+  border-radius: 6px;
+  color: var(--amber);
+}
+.ops-filters {
+  display: flex;
+  gap: 15px;
+  margin: 20px 0;
+}
+.ops-filters input {
+  flex: 1;
+}
+.ops-tabs {
+  display: flex;
+  gap: 6px;
+  overflow: auto;
+  border-bottom: 1px solid var(--border);
+  margin: 22px 0;
+}
+.ops-tabs button {
+  padding: 12px 16px;
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.ops-tabs button[aria-selected="true"] {
+  color: var(--green);
+  border-color: var(--green);
+}
+.ops-node-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+}
+.ops-node-heading h2 {
+  margin-top: 10px;
+}
+.ops-node-heading p {
+  color: var(--muted);
+}
+.ops-network-row {
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border);
+}
+.ops-check {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+}
+.ops button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.ops-back {
+  color: var(--green);
+}
+@media (max-width: 1200px) {
+  .ops-node-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .ops-stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .ops-context {
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 700px) {
+  .ops-toolbar,
+  .ops-row {
+    flex-wrap: wrap;
+  }
+  .ops-columns,
+  .ops-node-grid {
+    grid-template-columns: 1fr;
+  }
+  .ops-intro {
+    padding: 22px;
+  }
+  .ops-intro h2 {
+    font-size: 25px;
+  }
+  .ops-intro svg {
+    display: none;
+  }
+  .ops-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .ops-context > span:first-child {
+    flex-wrap: wrap;
+  }
+  .ops-network-row {
+    flex-wrap: wrap;
+  }
+  .ops-filters {
+    flex-wrap: wrap;
+  }
+  .ops-toolbar > .ops-muted {
+    display: none;
+  }
+}

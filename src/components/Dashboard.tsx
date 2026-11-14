@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { DashboardProvider, useDashboard } from "@/hooks/useDashboard";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
+import { OperationsWorkspace } from "@/features/forest/OperationsWorkspace";
 import { Overview } from "@/features/Overview";
 import { Nodes } from "@/features/Nodes";
 import {
@@ -38,19 +39,19 @@ function Application() {
   let content;
   switch (page) {
     case "overview":
-      content = <Overview />;
+      content = <OperationsWorkspace />;
       break;
     case "live-monitoring":
-      content = <LiveMonitoring />;
+      content = <OperationsWorkspace page="live-monitoring" />;
       break;
     case "nodes":
-      content = <Nodes nodeId={id} />;
+      content = <OperationsWorkspace page="nodes" nodeId={id} />;
       break;
     case "simulation":
       content = <Simulation />;
       break;
     case "network":
-      content = <NetworkPage />;
+      content = <OperationsWorkspace page="network" />;
       break;
     case "gateway":
       content = <GatewayPage />;
@@ -65,7 +66,7 @@ function Application() {
       content = <Alerts key={view} alertId={id} />;
       break;
     case "map":
-      content = <MapPage />;
+      content = <OperationsWorkspace page="map" />;
       break;
     case "intelligence":
       content = <Intelligence />;
@@ -77,7 +78,7 @@ function Application() {
       content = <DataLogs />;
       break;
     case "reports":
-      content = <Reports />;
+      content = <OperationsWorkspace page="reports" />;
       break;
     case "system-health":
       content = <SystemHealth />;
@@ -100,7 +101,8 @@ function Application() {
         </Panel>
       );
   }
-  if (modules.includes(page as ForestModule))
+  if (page === "incidents") content = <OperationsWorkspace page="incidents" />;
+  else if (modules.includes(page as ForestModule))
     content = <ForestWorkspace key={page} module={page as ForestModule} />;
   return (
     <DashboardLayout view={view}>
