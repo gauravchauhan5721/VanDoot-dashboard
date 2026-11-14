@@ -172,3 +172,40 @@
 .node-media .nm-evidence small {
   display: block;
 }
+
+.node-media .nm-demo-video,
+.node-media .nm-demo-image {
+  width: 100%;
+  aspect-ratio: 16/9;
+  object-fit: contain;
+  background: #0d1512;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  display: block;
+}
+.node-media .nm-demo-result {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  margin-top: 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--amber);
+}
+.node-media .nm-demo-choice {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin: 15px 0;
+  flex-wrap: wrap;
+}
+.node-media .nm-demo-sound-label {
+  display: grid;
+  gap: 8px;
+  font-size: 11px;
+  margin-bottom: 12px;
+}
+.node-media .nm-demo-sound-label select {
+  width: 100%;
+}

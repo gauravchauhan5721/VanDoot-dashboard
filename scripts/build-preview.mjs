@@ -8,6 +8,7 @@ const target = await mkdtemp(join(tmpdir(), "vandoot-preview-"));
 try {
   for (const file of [
     "src",
+    "public",
     "package.json",
     "tsconfig.json",
     "postcss.config.mjs",

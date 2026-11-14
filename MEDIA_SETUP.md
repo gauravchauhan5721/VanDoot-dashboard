@@ -32,3 +32,6 @@ JSON endpoints must allow the dashboard origin via CORS. HTTPS hosting may block
 TypeScript and production static build are checked. No physical ESP32, thermal sensor, microphone, AI service or recordings were supplied, so actual connectivity and inference accuracy remain unverified. This change adds media views and adapter inputs; it does not train or install AI models, change incident storage, or implement LoRa media transport.
 
 Camera and thermal event labels can include person and forest-fire detections, with source model/version, score, timestamp and imageUrl. Thermal detection images open separately from the heatmap. This UI does not supply or validate a person/fire model; low-resolution thermal arrays and hot pixels alone cannot establish identity or confirm fire.
+
+## Built-in demo media
+Demo mode includes two original 10-second MP4 animations (person and fire scene; illustrative thermal view) and three original 8-second WAV effects (ambience, motor-like buzz, impacts). All are explicitly synthetic; labels and boxes are scripted, not AI predictions. The same samples are reused across nodes for UI demonstration. Playback is manual, with no autoplay. Live mode never uses these files. Assets are bundled locally under public/demo; reproduce with python scripts/generate-demo-media.py (Pillow, NumPy, FFmpeg).

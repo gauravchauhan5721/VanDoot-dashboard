@@ -434,8 +434,153 @@ function Feed({
     </Panel>
   );
 }
+function DemoMedia({ nodeId, name }: { nodeId: string; name: string }) {
+  const [sound, setSound] = useState("forest");
+  const [cameraTime, setCameraTime] = useState(0);
+  const [thermalTime, setThermalTime] = useState(0);
+  const [cameraImage, setCameraImage] = useState(false);
+  const [thermalImage, setThermalImage] = useState(false);
+  const [errors, setErrors] = useState<Record<string, boolean>>({});
+  return (
+    <Panel
+      title={`${nodeId} · ${name}`}
+      subtitle="DEMO MEDIA · shared illustrative samples, not recordings from this node"
+    >
+      <div className="nm-columns">
+        {(["camera", "thermal"] as const).map((kind) => {
+          const still = kind === "camera" ? cameraImage : thermalImage;
+          const time = kind === "camera" ? cameraTime : thermalTime;
+          return (
+            <section key={kind}>
+              <h3>
+                {kind === "camera" ? (
+                  <Camera size={16} />
+                ) : (
+                  <Thermometer size={16} />
+                )}{" "}
+                {kind === "camera" ? "ESP32-CAM demo" : "Thermal camera demo"}
+              </h3>
+              <div className="nm-toggle">
+                <button
+                  className={!still ? "active" : ""}
+                  onClick={() =>
+                    kind === "camera"
+                      ? setCameraImage(false)
+                      : setThermalImage(false)
+                  }
+                >
+                  Demo video
+                </button>
+                <button
+                  className={still ? "active" : ""}
+                  onClick={() =>
+                    kind === "camera"
+                      ? setCameraImage(true)
+                      : setThermalImage(true)
+                  }
+                >
+                  Detection image
+                </button>
+              </div>
+              {still ? (
+                <img
+                  className="nm-demo-image"
+                  src={`/demo/${kind}-poster.jpg`}
+                  alt={`${nodeId} illustrative person and fire detection - not actual AI output`}
+                />
+              ) : (
+                <video
+                  className="nm-demo-video"
+                  controls
+                  playsInline
+                  preload="metadata"
+                  poster={`/demo/${kind}-poster.jpg`}
+                  onError={() => setErrors((old) => ({ ...old, [kind]: true }))}
+                  onTimeUpdate={(e) =>
+                    kind === "camera"
+                      ? setCameraTime(e.currentTarget.currentTime)
+                      : setThermalTime(e.currentTarget.currentTime)
+                  }
+                >
+                  <source src={`/demo/${kind}.mp4`} type="video/mp4" />
+                  Your browser does not support this demo video.
+                </video>
+              )}
+              {errors[kind] && (
+                <p className="nm-error">
+                  Demo video could not load. Reload the page to retry.
+                </p>
+              )}
+              <div className="nm-demo-result">
+                <strong>
+                  SIMULATED · Person present
+                  {(still || time >= 4) && " + fire visible"}
+                </strong>
+                <small>
+                  {still
+                    ? "Saved illustrative frame at 6 seconds"
+                    : "Scenario: person at 0s; fire appears at 4s"}
+                </small>
+              </div>
+              <p className="nm-note">
+                10-second animation. Boxes are illustrative, not model
+                predictions.
+                {kind === "thermal" &&
+                  " Colors are synthetic, not measured temperatures."}
+              </p>
+            </section>
+          );
+        })}
+        <section>
+          <h3>
+            <Radio size={16} /> Sound demo
+          </h3>
+          <label className="nm-demo-sound-label">
+            Sample sound
+            <select
+              aria-label={`Demo sound for ${nodeId}`}
+              value={sound}
+              onChange={(e) => setSound(e.target.value)}
+            >
+              <option value="forest">Forest-like ambience / chirps</option>
+              <option value="motor">Motor / chainsaw-like buzz</option>
+              <option value="chopping">Chopping-like impacts</option>
+            </select>
+          </label>
+          <div className="nm-sound">
+            <Radio size={30} />
+            <strong>Synthesized audio sample</strong>
+            <span>8 seconds · mono · 22.05 kHz</span>
+          </div>
+          <audio
+            key={sound}
+            controls
+            preload="metadata"
+            src={`/demo/${sound}.wav`}
+          />
+          <p className="nm-note">
+            Press Play to listen. These are synthesized effects for testing
+            playback, not field recordings or AI classification results.
+          </p>
+          <div className="nm-demo-result">
+            <strong>
+              Demo label:{" "}
+              {sound === "forest"
+                ? "ambience"
+                : sound === "motor"
+                  ? "motor-like sound"
+                  : "impact sound"}
+            </strong>
+            <small>Manually assigned sample label · no confidence score</small>
+          </div>
+        </section>
+      </div>
+    </Panel>
+  );
+}
 export function NodeMedia() {
   const { data, settings } = useDashboard();
+  const [showDemo, setShowDemo] = useState(true);
   const [sources, setSources] = useState<Record<string, Source>>({});
   const [selected, setSelected] = useState("all");
   const [edit, setEdit] = useState("");
@@ -485,7 +630,7 @@ export function NodeMedia() {
         </label>
         <span className="nm-note">
           {mode === "demo"
-            ? "Demo node list · no fabricated media or AI outputs"
+            ? "Demo nodes · illustrative videos & synthesized sound"
             : "Live node list"}
         </span>
       </div>
@@ -494,6 +639,18 @@ export function NodeMedia() {
         Configuration stays in this browser, separately for Demo and Live modes.
         Private LAN streams should be opened from the locally running dashboard.
       </p>
+      {mode === "demo" && (
+        <div className="nm-demo-choice">
+          <button className="button" onClick={() => setShowDemo((v) => !v)}>
+            {showDemo ? "Use configured sources" : "Show demo videos & sounds"}
+          </button>
+          <span className="nm-note">
+            {showDemo
+              ? "Demo playback only. Nothing is sent to Live mode."
+              : "Using your configured source URLs."}
+          </span>
+        </div>
+      )}
       {message && (
         <p role="status" className="nm-note">
           {message}
@@ -513,7 +670,11 @@ export function NodeMedia() {
               <Settings2 size={14} /> Configure {n.id} sources
             </button>
           </div>
-          <Feed nodeId={n.id} name={n.name} source={sources[n.id] || blank} />
+          {mode === "demo" && showDemo ? (
+            <DemoMedia nodeId={n.id} name={n.name} />
+          ) : (
+            <Feed nodeId={n.id} name={n.name} source={sources[n.id] || blank} />
+          )}
         </div>
       ))}
       {!nodes.length && (
