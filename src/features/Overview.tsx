@@ -1,5 +1,4 @@
 "use client";
-import { finite } from "@/utils/format";
 import { useState } from "react";
 import {
   Activity,
@@ -96,7 +95,7 @@ export function Overview() {
         />
         <KpiCard
           label="Network health"
-          value={finite(quality, 1)}
+          value={quality.toFixed(1)}
           suffix="%"
           icon={<Network size={18} />}
           spark={[9, 9, 14, 12, 20, 17, 16, 24, 23, 29, 27, 32]}

@@ -76,7 +76,7 @@ export class DemoDataService implements DataService {
         nodeId: nodeConfigs[1]?.id || nodeConfigs[0]?.id || "SYSTEM",
         title: "Temperature threshold exceeded",
         message:
-          "Temperature briefly reached 35.8 °C in Zone B. Current readings have returned to the normal range. Inspect the affected forest station and acknowledge this event.",
+          "Temperature briefly reached 35.8 °C in Zone B. Current readings have returned to the normal range. Review ventilation and acknowledge this event.",
         severity: "warning",
         timestamp: new Date(now - 120000).toISOString(),
         state: "active",

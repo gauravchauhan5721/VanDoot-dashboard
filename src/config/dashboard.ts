@@ -14,52 +14,45 @@ export const defaultSettings: Settings = {
 };
 export const navigation = [
   {
-    section: "OPERATIONS",
+    section: "WORKSPACE",
     items: [
       ["overview", "Overview", "LayoutDashboard"],
+      ["live-monitoring", "Live Monitoring", "Radio"],
+      ["node-media", "AI Camera & Sound", "Boxes"],
       ["nodes", "Nodes", "Cpu"],
-      ["live-monitoring", "Monitoring", "Radio"],
-      ["incidents", "Incidents", "Bell"],
-      ["map", "Forest Map", "MapPin"],
-      ["network", "Network", "Network"],
-      ["reports", "History & Reports", "FileChartColumn"],
+      ["network", "LoRaMesh Network", "Network"],
+      ["simulation", "3D Simulation", "Boxes"],
+      ["gateway", "Gateway", "Server"],
+      ["sensors", "Sensors", "Activity"],
+    ],
+  },
+  {
+    section: "INSIGHTS",
+    items: [
+      ["analytics", "Analytics", "ChartNoAxesCombined"],
+      ["alerts", "Alerts", "Bell"],
+      ["map", "Map & Locations", "MapPin"],
+      ["intelligence", "AI / Intelligence", "Sparkles"],
+    ],
+  },
+  {
+    section: "MANAGEMENT",
+    items: [
+      ["device-control", "Device Control", "SlidersHorizontal"],
+      ["data-logs", "Data Logs", "Logs"],
+      ["reports", "Reports", "FileChartColumn"],
+      ["system-health", "System Health", "HeartPulse"],
       ["settings", "Settings", "Settings"],
-    ],
-  },
-  {
-    section: "EVIDENCE & INTEGRATION",
-    items: [
-      ["camera", "Camera evidence", "Boxes"],
-      ["audio", "Audio analysis", "Radio"],
-      ["thermal", "Thermal frames", "Activity"],
-      ["integration", "Hardware setup", "SlidersHorizontal"],
-      ["models", "Model registry", "Sparkles"],
-    ],
-  },
-  {
-    section: "EXISTING TOOLS",
-    items: [
-      ["analytics", "Sensor analytics", "ChartNoAxesCombined"],
-      ["data-logs", "Telemetry logs", "Logs"],
-      ["simulation", "3D simulation", "Boxes"],
-      ["system-health", "System health", "HeartPulse"],
     ],
   },
 ];
 export const pageDescriptions: Record<string, string> = {
-  fire: "Review smoke and fire evidence with sensor context.",
-  camera: "Inspect camera evidence and connected model results.",
-  audio: "Classify recorded sounds with your connected model.",
-  thermal: "Explore recorded thermal frames and temperature extremes.",
-  fusion: "Cross-check evidence before confirming an incident.",
-  incidents: "Review, acknowledge and resolve forest observations.",
-  rangers: "Manage registered badges and unverified identities.",
-  models: "Record trained model versions and evaluation results.",
-  integration: "Prepare gateway and AI service connections.",
+  "node-media":
+    "Camera streams, thermal frames and sound detections for every node.",
   overview: "Your entire network. One clear picture.",
   "live-monitoring": "A real-time pulse of your distributed sensor network.",
   nodes: "Monitor, manage, and explore your connected devices.",
-  network: "Reported connectivity for the Wi-Fi / local-network prototype.",
+  network: "Every connection, every hop. Your LoRaMesh at a glance.",
   simulation: "Explore the forest surveillance network in interactive 3D.",
   gateway: "The bridge between your devices and your intelligence.",
   sensors: "Environmental intelligence from every corner of your network.",

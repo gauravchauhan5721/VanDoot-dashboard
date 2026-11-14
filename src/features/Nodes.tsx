@@ -1,5 +1,4 @@
 "use client";
-import { finite } from "@/utils/format";
 import { useState } from "react";
 import {
   Battery,
@@ -261,12 +260,10 @@ export function Nodes({ nodeId }: { nodeId?: string }) {
                 <small>{n.location.label}</small>
                 <div className="node-card-readings">
                   <span>
-                    {finite(
-                      settings.units === "imperial"
-                        ? (n.readings.temperature * 9) / 5 + 32
-                        : n.readings.temperature,
-                      1,
-                    )}{" "}
+                    {(settings.units === "imperial"
+                      ? (n.readings.temperature * 9) / 5 + 32
+                      : n.readings.temperature
+                    ).toFixed(1)}{" "}
                     {settings.units === "imperial" ? "°F" : "°C"}
                   </span>
                   <span>

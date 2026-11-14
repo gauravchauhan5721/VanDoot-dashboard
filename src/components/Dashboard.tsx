@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { DashboardProvider, useDashboard } from "@/hooks/useDashboard";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
-import { OperationsWorkspace } from "@/features/forest/OperationsWorkspace";
+import { NodeMedia } from "@/features/NodeMedia";
 import { Overview } from "@/features/Overview";
 import { Nodes } from "@/features/Nodes";
 import {
@@ -21,8 +21,6 @@ import { DeviceControl, Reports } from "@/features/Operations";
 import { Settings } from "@/features/Settings";
 import { Simulation } from "@/features/Simulation";
 import { EmptyState, LoadingState, Panel } from "./ui";
-import { ForestWorkspace } from "@/features/forest/ForestWorkspace";
-import { modules, ForestModule } from "@/features/forest/contracts";
 function Application() {
   const [view, setView] = useState("overview");
   const { loading, data, error } = useDashboard();
@@ -38,20 +36,23 @@ function Application() {
   const [page, id, extra] = view.split("/");
   let content;
   switch (page) {
+    case "node-media":
+      content = <NodeMedia />;
+      break;
     case "overview":
-      content = <OperationsWorkspace />;
+      content = <Overview />;
       break;
     case "live-monitoring":
-      content = <OperationsWorkspace page="live-monitoring" />;
+      content = <LiveMonitoring />;
       break;
     case "nodes":
-      content = <OperationsWorkspace page="nodes" nodeId={id} />;
+      content = <Nodes nodeId={id} />;
       break;
     case "simulation":
       content = <Simulation />;
       break;
     case "network":
-      content = <OperationsWorkspace page="network" />;
+      content = <NetworkPage />;
       break;
     case "gateway":
       content = <GatewayPage />;
@@ -66,7 +67,7 @@ function Application() {
       content = <Alerts key={view} alertId={id} />;
       break;
     case "map":
-      content = <OperationsWorkspace page="map" />;
+      content = <MapPage />;
       break;
     case "intelligence":
       content = <Intelligence />;
@@ -78,7 +79,7 @@ function Application() {
       content = <DataLogs />;
       break;
     case "reports":
-      content = <OperationsWorkspace page="reports" />;
+      content = <Reports />;
       break;
     case "system-health":
       content = <SystemHealth />;
@@ -101,14 +102,11 @@ function Application() {
         </Panel>
       );
   }
-  if (page === "incidents") content = <OperationsWorkspace page="incidents" />;
-  else if (modules.includes(page as ForestModule))
-    content = <ForestWorkspace key={page} module={page as ForestModule} />;
   return (
     <DashboardLayout view={view}>
       {loading &&
       !data.nodes.length &&
-      !["settings", "system-health", "simulation", ...modules].includes(
+      !["settings", "system-health", "simulation", "node-media"].includes(
         page,
       ) ? (
         <LoadingState />

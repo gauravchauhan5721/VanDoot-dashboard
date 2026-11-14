@@ -1,5 +1,4 @@
 "use client";
-import { finite } from "@/utils/format";
 import { Battery, ChevronRight, Cpu, Signal } from "lucide-react";
 import { SensorNode } from "@/types";
 import { StatusBadge, EmptyState } from "./ui";
@@ -57,19 +56,17 @@ export function NodeTable({
                 />
               </td>
               <td>
-                {finite(
-                  settings.units === "imperial"
-                    ? (node.readings.temperature * 9) / 5 + 32
-                    : node.readings.temperature,
-                  1,
-                )}
+                {(settings.units === "imperial"
+                  ? (node.readings.temperature * 9) / 5 + 32
+                  : node.readings.temperature
+                ).toFixed(1)}
                 <span className="unit">
                   {" "}
                   {settings.units === "imperial" ? "°F" : "°C"}
                 </span>
               </td>
               <td>
-                {finite(node.readings.humidity, 1)}
+                {node.readings.humidity.toFixed(1)}
                 <span className="unit"> %</span>
               </td>
               <td>
@@ -77,7 +74,7 @@ export function NodeTable({
                   className={`inline-metric ${node.readings.battery < 25 ? "amber" : ""}`}
                 >
                   <Battery size={16} />
-                  {finite(node.readings.battery, 0)}%
+                  {node.readings.battery.toFixed(0)}%
                 </span>
               </td>
               <td>
@@ -86,7 +83,7 @@ export function NodeTable({
                 >
                   <Signal size={15} />
                   <span className="normal-text">
-                    {finite(node.readings.rssi, 0)}{" "}
+                    {node.readings.rssi.toFixed(0)}{" "}
                     <span className="unit">dBm</span>
                   </span>
                 </span>

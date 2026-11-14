@@ -29,7 +29,6 @@ import {
   CalendarDays,
   RefreshCw,
 } from "lucide-react";
-import { fixtures } from "@/features/forest/OperationsWorkspace";
 import { navigation, pageDescriptions } from "@/config/dashboard";
 import { useDashboard } from "@/hooks/useDashboard";
 import { download } from "@/utils/format";
@@ -93,7 +92,7 @@ export function DashboardLayout({
     setMobile(false);
   }, [view]);
   const results = [
-    ...(settings.mode === "demo" ? fixtures : data.nodes).map((n) => ({
+    ...data.nodes.map((n) => ({
       id: `nodes/${n.id}`,
       name: `${n.id} · ${n.name}`,
       category: "Device",
@@ -125,7 +124,7 @@ export function DashboardLayout({
             <Network size={17} />
           </span>
           <span>
-            Main workspace<small>Forest monitoring network</small>
+            Main workspace<small>Industrial IoT network</small>
           </span>
           <a href="#settings" aria-label="Workspace settings">
             <ChevronDown size={14} />
@@ -170,7 +169,7 @@ export function DashboardLayout({
             <p>
               {settings.mode === "demo"
                 ? "Explore freely. No hardware needed."
-                : "Live mode selected. Check gateway status."}
+                : "Connected to your configured backend."}
             </p>
             <a href="#settings">
               {settings.mode === "demo"
@@ -273,11 +272,12 @@ export function DashboardLayout({
             </div>
             <span className="topbar-divider" />
             <a
-              href="#incidents"
+              href="#alerts"
               className="notification-button"
-              aria-label="Open incident review"
+              aria-label={`${alertCount} active alerts`}
             >
               <Bell size={18} />
+              {alertCount > 0 && <i />}
             </a>
             <button
               className="avatar"
@@ -297,11 +297,7 @@ export function DashboardLayout({
                   {page === "overview" && (
                     <span className={`system-pill ${error ? "error" : ""}`}>
                       <i />
-                      {error
-                        ? "Connection unavailable"
-                        : settings.mode === "demo"
-                          ? "Synthetic demo"
-                          : "Check source freshness"}
+                      {error ? "Connection unavailable" : "System operational"}
                     </span>
                   )}
                 </div>
@@ -336,7 +332,7 @@ export function DashboardLayout({
                   }}
                 >
                   <ArrowDownToLine size={14} />
-                  Export telemetry
+                  Export data
                 </button>
               </div>
             </div>
@@ -353,12 +349,7 @@ export function DashboardLayout({
               </span>
               <span>
                 <RefreshCw size={11} className={loading ? "spin" : ""} />
-                Snapshot{" "}
-                {loading
-                  ? "loading…"
-                  : data.timestamp
-                    ? new Date(data.timestamp).toLocaleTimeString()
-                    : "unavailable"}
+                Updated {loading ? "…" : "just now"}
                 <span className="dot-separator">·</span>Every{" "}
                 {settings.refreshInterval}s
               </span>

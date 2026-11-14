@@ -210,10 +210,7 @@ export function Meter({
     <div className="meter">
       <div>
         <span>{label}</span>
-        <strong>
-          {detail ||
-            (Number.isFinite(value) ? `${value.toFixed(0)}%` : "Unknown")}
-        </strong>
+        <strong>{detail || `${value.toFixed(0)}%`}</strong>
       </div>
       <div className="meter-track">
         <i
