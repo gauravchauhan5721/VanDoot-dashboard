@@ -18,6 +18,7 @@ import { MapPage } from "@/features/MapPage";
 import { Intelligence } from "@/features/Intelligence";
 import { DeviceControl, Reports } from "@/features/Operations";
 import { Settings } from "@/features/Settings";
+import { Simulation } from "@/features/Simulation";
 import { EmptyState, LoadingState, Panel } from "./ui";
 function Application() {
   const [view, setView] = useState("overview");
@@ -42,6 +43,9 @@ function Application() {
       break;
     case "nodes":
       content = <Nodes nodeId={id} />;
+      break;
+    case "simulation":
+      content = <Simulation />;
       break;
     case "network":
       content = <NetworkPage />;
@@ -98,7 +102,7 @@ function Application() {
     <DashboardLayout view={view}>
       {loading &&
       !data.nodes.length &&
-      !["settings", "system-health"].includes(page) ? (
+      !["settings", "system-health", "simulation"].includes(page) ? (
         <LoadingState />
       ) : error &&
         !data.nodes.length &&

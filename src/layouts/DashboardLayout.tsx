@@ -5,6 +5,7 @@ import {
   ArrowDownToLine,
   ArrowRight,
   Bell,
+  Boxes,
   ChartNoAxesCombined,
   ChevronDown,
   ChevronRight,
@@ -35,6 +36,7 @@ import { Modal } from "@/components/ui";
 const icons: Record<string, typeof Activity> = {
   Activity,
   Bell,
+  Boxes,
   ChartNoAxesCombined,
   Cpu,
   FileChartColumn,
