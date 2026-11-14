@@ -8,8 +8,10 @@ export function MapPage() {
   const [selected, setSelected] = useState("");
   const [zoom, setZoom] = useState(1);
   const [coverage, setCoverage] = useState(true);
-  const devices = [...data.gateways, ...data.nodes];
-  const center = data.gateways[0]?.location || { lat: 12.9716, lng: 77.5946 };
+  const devices = [...data.gateways, ...data.nodes].filter(
+    (d) => Number.isFinite(d.location.lat) && Number.isFinite(d.location.lng),
+  );
+  const center = devices[0]?.location || { lat: 31.7, lng: 76.5 };
   const project = (lat: number, lng: number) => ({
     x: 480 + (lng - center.lng) * 110000 * zoom,
     y: 270 - (lat - center.lat) * 110000 * zoom,
@@ -20,8 +22,8 @@ export function MapPage() {
       <div className="info-banner">
         <MapPin size={18} />
         {settings.mode === "demo"
-          ? "DEMO LOCATIONS · Simulated facility in Bengaluru, India."
-          : "Device coordinates from your gateway."}{" "}
+          ? "DEMO LOCATIONS · Illustrative forest stations."
+          : "Only devices with reported coordinates are plotted."}{" "}
         This is an offline coordinate map; coverage rings are illustrative, not
         a radio survey.
       </div>
@@ -63,39 +65,41 @@ export function MapPage() {
               </g>
               <g fill="var(--muted)" fontSize="10" letterSpacing="2">
                 <text x="308" y="308">
-                  PRODUCTION FLOOR
+                  FOREST SECTOR A
                 </text>
                 <text x="539" y="209">
-                  WAREHOUSE
+                  FOREST SECTOR B
                 </text>
                 <text x="566" y="497">
-                  OUTDOOR FACILITY
+                  FOREST SECTOR C
                 </text>
                 <text x="54" y="145">
                   ACCESS ROAD
                 </text>
               </g>
               {coverage &&
-                data.gateways.map((g) => {
-                  const p = project(g.location.lat, g.location.lng);
-                  return (
-                    <g key={g.id}>
-                      {[110, 210, 310].map((r) => (
-                        <circle
-                          key={r}
-                          cx={p.x}
-                          cy={p.y}
-                          r={r * zoom}
-                          fill="#aade6b"
-                          fillOpacity=".018"
-                          stroke="#aade6b"
-                          strokeOpacity=".18"
-                          strokeDasharray="5 7"
-                        />
-                      ))}
-                    </g>
-                  );
-                })}
+                data.gateways
+                  .filter((g) => devices.some((d) => d.id === g.id))
+                  .map((g) => {
+                    const p = project(g.location.lat, g.location.lng);
+                    return (
+                      <g key={g.id}>
+                        {[110, 210, 310].map((r) => (
+                          <circle
+                            key={r}
+                            cx={p.x}
+                            cy={p.y}
+                            r={r * zoom}
+                            fill="#aade6b"
+                            fillOpacity=".018"
+                            stroke="#aade6b"
+                            strokeOpacity=".18"
+                            strokeDasharray="5 7"
+                          />
+                        ))}
+                      </g>
+                    );
+                  })}
               {data.links.map((l) => {
                 const a = devices.find((d) => d.id === l.source),
                   b = devices.find((d) => d.id === l.target);

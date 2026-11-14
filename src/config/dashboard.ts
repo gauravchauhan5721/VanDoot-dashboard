@@ -14,6 +14,20 @@ export const defaultSettings: Settings = {
 };
 export const navigation = [
   {
+    section: "FOREST PROTECTION",
+    items: [
+      ["fire", "Fire & Smoke", "Activity"],
+      ["camera", "Camera Detections", "Boxes"],
+      ["audio", "Audio Analysis", "Radio"],
+      ["thermal", "Thermal Monitoring", "Activity"],
+      ["fusion", "Threat Verification", "Sparkles"],
+      ["incidents", "Incident Review", "Bell"],
+      ["rangers", "Ranger Registry", "Cpu"],
+      ["models", "Model Registry", "Sparkles"],
+      ["integration", "Hardware Integration", "SlidersHorizontal"],
+    ],
+  },
+  {
     section: "WORKSPACE",
     items: [
       ["overview", "Overview", "LayoutDashboard"],
@@ -46,6 +60,15 @@ export const navigation = [
   },
 ];
 export const pageDescriptions: Record<string, string> = {
+  fire: "Review smoke and fire evidence with sensor context.",
+  camera: "Inspect camera evidence and connected model results.",
+  audio: "Classify recorded sounds with your connected model.",
+  thermal: "Explore recorded thermal frames and temperature extremes.",
+  fusion: "Cross-check evidence before confirming an incident.",
+  incidents: "Review, acknowledge and resolve forest observations.",
+  rangers: "Manage registered badges and unverified identities.",
+  models: "Record trained model versions and evaluation results.",
+  integration: "Prepare gateway and AI service connections.",
   overview: "Your entire network. One clear picture.",
   "live-monitoring": "A real-time pulse of your distributed sensor network.",
   nodes: "Monitor, manage, and explore your connected devices.",

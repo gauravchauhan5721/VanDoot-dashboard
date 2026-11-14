@@ -7,9 +7,9 @@ export const nodeConfigs: NodeConfig[] = [
     parentId: "GW-001",
     firmware: "v1.2.4",
     location: {
-      lat: 12.9719,
-      lng: 77.5933,
-      label: "Zone A · Production floor",
+      lat: 31.7019,
+      lng: 76.5233,
+      label: "Zone A · Forest sector A",
     },
   },
   {
@@ -18,7 +18,7 @@ export const nodeConfigs: NodeConfig[] = [
     gatewayId: "GW-001",
     parentId: "GW-001",
     firmware: "v1.2.4",
-    location: { lat: 12.9728, lng: 77.5955, label: "Zone B · Warehouse" },
+    location: { lat: 31.7028, lng: 76.5255, label: "Zone B · Forest sector B" },
   },
   {
     id: "NODE-03",
@@ -26,7 +26,7 @@ export const nodeConfigs: NodeConfig[] = [
     gatewayId: "GW-001",
     parentId: "GW-001",
     firmware: "v1.2.3",
-    location: { lat: 12.9703, lng: 77.5962, label: "Zone C · Outdoor" },
+    location: { lat: 31.7003, lng: 76.5262, label: "Zone C · Forest sector C" },
   },
 ];
 export const gatewayConfigs = [
@@ -36,9 +36,9 @@ export const gatewayConfigs = [
     model: "Raspberry Pi 4",
     ip: "192.168.1.100",
     location: {
-      lat: 12.9716,
-      lng: 77.5946,
-      label: "Control room · Main facility",
+      lat: 31.7016,
+      lng: 76.5246,
+      label: "Control room · Forest base",
     },
   },
 ];

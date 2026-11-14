@@ -44,7 +44,7 @@ export function DataLogs() {
   return (
     <Panel
       title="Telemetry log"
-      subtitle={`${rows.length.toLocaleString()} records · Last 2,000 readings retained in the browser`}
+      subtitle={`${rows.length.toLocaleString()} records · Up to 2,000 readings retained in this session`}
       action={
         <span className="live-label">
           <i />

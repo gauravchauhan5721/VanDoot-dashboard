@@ -124,7 +124,7 @@ export function DashboardLayout({
             <Network size={17} />
           </span>
           <span>
-            Main workspace<small>Industrial IoT network</small>
+            Main workspace<small>Forest monitoring network</small>
           </span>
           <a href="#settings" aria-label="Workspace settings">
             <ChevronDown size={14} />

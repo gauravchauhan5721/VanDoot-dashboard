@@ -1,276 +1,168 @@
-
 import {
+  Alert,
   CommandResult,
   DataService,
   DeviceCommand,
-  HistoryPoint,
   Snapshot,
   SensorNode,
-  Gateway,
   Telemetry,
-  NetworkLink,
-  Alert,
 } from "@/types";
-
-import { nodeConfigs, gatewayConfigs } from "@/config/nodes";
 import { apiConfig } from "@/config/api";
-
-type GatewayReading = {
-  node?: string;
-  online?: boolean;
-  last_seen?: number;
-  received_at?: string;
-  received?: number;
-  temperature?: number;
-  humidity?: number;
-  PIR?: number;
-  MQ2?: number;
-  battery?: number;
-  rssi?: number;
-  snr?: number;
-  [key: string]: unknown;
+const object = (v: unknown): v is Record<string, unknown> =>
+  !!v && typeof v === "object" && !Array.isArray(v);
+const numeric = (v: unknown) =>
+  typeof v === "number" && Number.isFinite(v) ? v : NaN;
+export const SENSOR_ALIASES: Record<string, string[]> = {
+  temperature: ["temperature", "temp"],
+  humidity: ["humidity"],
+  MQ2: ["MQ2", "mq2", "gas", "smoke"],
+  PIR: ["PIR", "pir", "motion"],
+  pm25: ["pm25", "PM2.5", "pm2_5"],
+  thermalMax: ["thermalMax", "thermal_max"],
+  soundLevel: ["soundLevel", "sound"],
+  battery: ["battery"],
+  rssi: ["rssi"],
+  snr: ["snr"],
 };
-
-const isObject = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
-
-const getNumber = (value: unknown, fallback = 0): number =>
-  typeof value === "number" && Number.isFinite(value) ? value : fallback;
-
-const getTimestamp = (value: GatewayReading): string => {
-  if (typeof value.received_at === "string") {
-    const parsed = new Date(value.received_at);
-
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed.toISOString();
-    }
-  }
-
-  if (typeof value.last_seen === "number") {
-    return new Date(value.last_seen * 1000).toISOString();
-  }
-
-  return new Date().toISOString();
-};
-
-export class LiveApiService implements DataService {
-  constructor(private endpoint: string) {}
-
-  private async request(
-    path: string,
-    init?: RequestInit
-  ): Promise<any> {
-    if (!this.endpoint) {
-      throw new Error(
-        "Gateway API URL is missing. Configure it in Dashboard Settings."
-      );
-    }
-
-    const response = await fetch(
-      `${this.endpoint.replace(/\/$/, "")}${path}`,
-      {
-        ...init,
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-          ...init?.headers,
-        },
-        signal: AbortSignal.timeout(apiConfig.timeout),
-      }
+export function normalizeLatest(latest: unknown, now = Date.now()): Snapshot {
+  if (!object(latest)) throw Error("Invalid gateway response");
+  const nodes: SensorNode[] = [];
+  const logs: Telemetry[] = [];
+  for (const [id, raw] of Object.entries(latest)) {
+    if (!object(raw)) continue;
+    const timestamp =
+      typeof raw.received_at === "string"
+        ? Date.parse(raw.received_at)
+        : typeof raw.last_seen === "number"
+          ? raw.last_seen * 1000
+          : NaN;
+    const fresh =
+      Number.isFinite(timestamp) &&
+      now - timestamp >= 0 &&
+      now - timestamp <= 30000;
+    const readings: Record<string, number> = Object.fromEntries(
+      Object.keys(SENSOR_ALIASES).map((k) => [k, NaN]),
     );
-
-    if (!response.ok) {
-      throw new Error(`Gateway API error: HTTP ${response.status}`);
+    for (const [key, aliases] of Object.entries(SENSOR_ALIASES)) {
+      const value = aliases
+        .map((a) => raw[a])
+        .find((v) => typeof v === "number" && Number.isFinite(v));
+      if (value !== undefined) readings[key] = value as number;
     }
-
-    return response.json();
-  }
-
-  async getSnapshot(): Promise<Snapshot> {
-    // Fetch real sensor data from the Raspberry Pi.
-    const latest = await this.request("/latest");
-
-    if (!isObject(latest)) {
-      throw new Error(
-        "Invalid response received from Raspberry Pi."
-      );
-    }
-
-    const now = new Date().toISOString();
-
-    const nodes: SensorNode[] = [];
-    const links: NetworkLink[] = [];
-    const logs: Telemetry[] = [];
-    const history: HistoryPoint[] = [];
-
-    // Convert Raspberry Pi data into dashboard node format.
-    for (const [nodeId, rawData] of Object.entries(latest)) {
-      if (!isObject(rawData)) continue;
-
-      const data = rawData as GatewayReading;
-      const timestamp = getTimestamp(data);
-
-      const online = data.online !== false;
-
-      const temperature = getNumber(data.temperature);
-      const humidity = getNumber(data.humidity);
-      const battery = getNumber(data.battery, 100);
-      const rssi = getNumber(data.rssi, -70);
-      const snr = getNumber(data.snr);
-
-      const readings: Record<string, number> = {
-        temperature,
-        humidity,
-        battery,
-        rssi,
-        snr,
-        PIR: getNumber(data.PIR),
-        MQ2: getNumber(data.MQ2),
-      };
-
-      const config = nodeConfigs.find(
-        (node) => node.id === nodeId
-      );
-
-      const node: SensorNode = {
-        id: nodeId,
-        name: config?.name || nodeId,
-        gatewayId:
-          config?.gatewayId ||
-          gatewayConfigs[0]?.id ||
-          "GW-001",
-        parentId:
-          config?.parentId ||
-          gatewayConfigs[0]?.id ||
-          "GW-001",
-        location: config?.location || {
-          lat: 31.0,
-          lng: 77.0,
-          label: "Himachal Pradesh",
-        },
-        firmware: config?.firmware || "ESP32",
-        status: online ? "online" : "offline",
-        readings,
-        lastSeen: timestamp,
-        uptime: 0,
-        packets: getNumber(data.received),
-        received: getNumber(data.received),
-        lost: 0,
-        linkQuality: online ? 90 : 0,
-      };
-
-      nodes.push(node);
-
-      // Create a network link for this node.
-      links.push({
-        id: `${node.parentId}-${node.id}`,
-        source: node.parentId,
-        target: node.id,
-        rssi,
-        snr,
-        quality: node.linkQuality,
-        status: node.status,
-        traffic: node.packets,
-      });
-
-      // Add sensor values to dashboard logs.
-      for (const [sensor, value] of Object.entries(data)) {
-        if (
-          typeof value !== "number" ||
-          !Number.isFinite(value) ||
-          ["last_seen", "received"].includes(sensor)
-        ) {
-          continue;
-        }
-
-        logs.push({
-          id: `${nodeId}-${sensor}-${timestamp}`,
-          timestamp,
-          nodeId,
-          sensor,
-          value,
-          unit:
-            sensor === "temperature"
-              ? "°C"
-              : sensor === "humidity"
-                ? "%"
+    const location = object(raw.location) ? raw.location : {};
+    const lat = numeric(location.lat),
+      lng = numeric(location.lng);
+    const located =
+      Number.isFinite(lat) &&
+      Math.abs(lat) <= 90 &&
+      Number.isFinite(lng) &&
+      Math.abs(lng) <= 180;
+    const lastSeen = Number.isFinite(timestamp)
+      ? new Date(timestamp).toISOString()
+      : "";
+    const node: SensorNode = {
+      id,
+      name: typeof raw.name === "string" ? raw.name : id,
+      gatewayId: typeof raw.gatewayId === "string" ? raw.gatewayId : "GW-001",
+      parentId: typeof raw.parentId === "string" ? raw.parentId : "GW-001",
+      firmware: typeof raw.firmware === "string" ? raw.firmware : "Unknown",
+      location: {
+        lat: located ? lat : NaN,
+        lng: located ? lng : NaN,
+        label: located
+          ? String(location.label || "Surveyed node location")
+          : "Location unknown",
+      },
+      status: fresh && raw.online === true ? "online" : "offline",
+      readings,
+      lastSeen,
+      uptime: numeric(raw.uptime),
+      packets: numeric(raw.received),
+      received: numeric(raw.received),
+      lost: numeric(raw.lost),
+      linkQuality: numeric(raw.linkQuality),
+    };
+    nodes.push(node);
+    for (const [sensor, value] of Object.entries(readings).filter(([, v]) =>
+      Number.isFinite(v),
+    ))
+      logs.push({
+        id: `${id}-${sensor}-${lastSeen}`,
+        timestamp: lastSeen,
+        nodeId: id,
+        sensor,
+        value,
+        unit:
+          sensor === "temperature" || sensor === "thermalMax"
+            ? "°C"
+            : sensor === "humidity" || sensor === "battery"
+              ? "%"
+              : sensor === "pm25"
+                ? "µg/m³"
                 : sensor === "rssi"
                   ? "dBm"
-                  : "",
-          rssi,
-          snr,
-          status: "Received",
-          event: "Live sensor reading",
-        });
-      }
-
-      // Add history point for charts.
-      history.push({
-        timestamp,
-        nodeId,
-        readings,
+                  : sensor === "snr"
+                    ? "dB"
+                    : "raw",
+        rssi: readings.rssi,
+        snr: readings.snr,
+        status: fresh ? "Received" : "Stale",
+        event: "Live sensor reading",
       });
-    }
-
-    // Build gateway information.
-    const gateways: Gateway[] = gatewayConfigs.map(
-      (gateway) => ({
-        id: gateway.id,
-        name: gateway.name,
-        model: gateway.model || "Raspberry Pi 4",
-        status: nodes.some(
-          (node) => node.status === "online"
-        )
-          ? "online"
-          : "offline",
-        cpu: 0,
-        ram: 0,
-        storage: 0,
-        temperature: 0,
-        uptime: 0,
-        ip: this.endpoint,
-        received: nodes.reduce(
-          (sum, node) => sum + node.received,
-          0
-        ),
-        transmitted: 0,
-        lost: 0,
-        lastSeen: now,
-        location: gateway.location,
-      })
-    );
-
-    return {
-      nodes,
-      gateways,
-      links,
-      alerts: [],
-      logs,
-      history,
-      timestamp: now,
-    };
   }
-
-  // Update alert state in Live Mode.
-  async updateAlert(
-    id: string,
-    state: Alert["state"]
-  ): Promise<void> {
-    await this.request(
-      `/alerts/${encodeURIComponent(id)}`,
-      {
-        method: "PATCH",
-        body: JSON.stringify({ state }),
-      }
-    );
+  return {
+    nodes,
+    gateways: [],
+    links: nodes.map((n) => ({
+      id: `${n.parentId}-${n.id}`,
+      source: n.parentId,
+      target: n.id,
+      rssi: n.readings.rssi,
+      snr: n.readings.snr,
+      quality: n.linkQuality,
+      status: n.status,
+      traffic: n.packets,
+    })),
+    alerts: [],
+    logs,
+    history: nodes
+      .filter((n) => n.status !== "offline")
+      .map((n) => ({
+        nodeId: n.id,
+        timestamp: n.lastSeen,
+        readings: n.readings,
+      })),
+    timestamp: new Date(now).toISOString(),
+  };
+}
+export class LiveApiService implements DataService {
+  constructor(private endpoint: string) {}
+  private async request(path: string, init?: RequestInit): Promise<unknown> {
+    if (!this.endpoint) throw Error("Configure the gateway URL in Settings.");
+    const r = await fetch(`${this.endpoint.replace(/\/$/, "")}${path}`, {
+      ...init,
+      headers: {
+        Accept: "application/json",
+        ...(init?.body ? { "Content-Type": "application/json" } : {}),
+        ...init?.headers,
+      },
+      signal: AbortSignal.timeout(apiConfig.timeout),
+    });
+    if (!r.ok) throw Error(`Gateway API error: HTTP ${r.status}`);
+    return r.json();
   }
-
-  // Device commands are not implemented in the current Flask gateway.
-  async sendCommand(
-    command: DeviceCommand
-  ): Promise<CommandResult> {
-    throw new Error(
-      `Device commands are not available yet. ${command.command} was not sent.`
+  async getSnapshot() {
+    return normalizeLatest(await this.request("/latest"));
+  }
+  async updateAlert(id: string, state: Alert["state"]) {
+    await this.request(`/alerts/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ state }),
+    });
+  }
+  async sendCommand(command: DeviceCommand): Promise<CommandResult> {
+    throw Error(
+      `Gateway command implementation not connected. ${command.command} was not sent.`,
     );
   }
 }

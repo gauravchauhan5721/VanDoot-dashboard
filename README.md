@@ -1,3 +1,7 @@
+# Forest protection update
+
+See [FOREST_WORKSPACE_SETUP.md](FOREST_WORKSPACE_SETUP.md) for the new proposal modules, API contracts, migration and verification limits. This guide takes precedence over older live-adapter descriptions below.
+
 # VANDOOT
 
 ## Intelligent Distributed Monitoring & Communication System

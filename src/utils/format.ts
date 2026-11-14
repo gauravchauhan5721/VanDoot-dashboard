@@ -1,6 +1,8 @@
 import { SensorDefinition, Settings } from "@/types";
 export const number = (n: number) =>
-  new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);
+  Number.isFinite(n)
+    ? new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n)
+    : "—";
 export const time = (date: string) =>
   new Date(date).toLocaleTimeString("en-US", {
     hour: "2-digit",
@@ -8,6 +10,7 @@ export const time = (date: string) =>
     hour12: false,
   });
 export const ago = (date: string) => {
+  if (!Number.isFinite(Date.parse(date))) return "Unknown";
   const seconds = Math.max(
     0,
     Math.floor((Date.now() - new Date(date).getTime()) / 1000),
@@ -24,10 +27,12 @@ export function sensorValue(
   units: Settings["units"],
 ) {
   return {
-    value: (sensor.id === "temperature" && units === "imperial"
-      ? (value * 9) / 5 + 32
-      : value
-    ).toFixed(sensor.precision),
+    value: !Number.isFinite(value)
+      ? "—"
+      : (sensor.id === "temperature" && units === "imperial"
+          ? (value * 9) / 5 + 32
+          : value
+        ).toFixed(sensor.precision),
     unit:
       sensor.id === "temperature" && units === "imperial" ? "°F" : sensor.unit,
   };
@@ -60,3 +65,6 @@ export function download(filename: string, rows: Record<string, unknown>[]) {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+export const finite = (value: number, precision = 1) =>
+  Number.isFinite(value) ? value.toFixed(precision) : "—";

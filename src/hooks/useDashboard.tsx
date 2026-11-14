@@ -113,16 +113,42 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     setError("");
     const accept = (snapshot: Snapshot) => {
       if (!active) return;
-      setData({
+      setData((previous) => ({
         ...snapshot,
-        alerts: snapshot.alerts.map((a) => ({
+        history:
+          settings.mode === "live"
+            ? Array.from(
+                new Map(
+                  [...previous.history, ...snapshot.history].map((p) => [
+                    p.nodeId + p.timestamp,
+                    p,
+                  ]),
+                ).values(),
+              ).slice(-5000)
+            : snapshot.history,
+        logs:
+          settings.mode === "live"
+            ? Array.from(
+                new Map(
+                  [...snapshot.logs, ...previous.logs].map((p) => [p.id, p]),
+                ).values(),
+              ).slice(0, 2000)
+            : snapshot.logs,
+        alerts: (settings.mode === "live"
+          ? Array.from(
+              new Map(
+                [...previous.alerts, ...snapshot.alerts].map((a) => [a.id, a]),
+              ).values(),
+            )
+          : snapshot.alerts
+        ).map((a) => ({
           ...a,
           state:
             settings.mode === "demo"
               ? actions.current[a.id] || a.state
               : a.state,
         })),
-      });
+      }));
       setError("");
       setLoading(false);
     };
@@ -134,6 +160,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       } catch (e) {
         if (active) {
           setError(e instanceof Error ? e.message : "Connection failed");
+          setData((current) => ({
+            ...current,
+            nodes: current.nodes.map((n) => ({ ...n, status: "offline" })),
+          }));
           setLoading(false);
         }
       } finally {
@@ -154,41 +184,41 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       ws.disconnect();
     };
   }, [ready, settings, paused, version]);
-  
-const saveSettings = async (next: Settings) => {
-  try {
-    // Update the UI mode immediately
-    setSettings(next);
 
-    // Try saving to database, but don't block mode switching
+  const saveSettings = async (next: Settings) => {
     try {
-      const response = await fetch("/api/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(next),
-      });
+      // Update the UI mode immediately
+      setSettings(next);
 
-      if (response.ok) {
-        setDatabase(true);
-      } else {
+      // Try saving to database, but don't block mode switching
+      try {
+        const response = await fetch("/api/settings", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(next),
+        });
+
+        if (response.ok) {
+          setDatabase(true);
+        } else {
+          setDatabase(false);
+        }
+      } catch {
         setDatabase(false);
       }
+
+      notify(
+        next.mode === "live"
+          ? "Switched to Live Mode"
+          : "Switched to Demo Mode",
+      );
+
+      return true;
     } catch {
-      setDatabase(false);
+      notify("Unable to change mode");
+      return false;
     }
-
-    notify(
-      next.mode === "live"
-        ? "Switched to Live Mode"
-        : "Switched to Demo Mode"
-    );
-
-    return true;
-  } catch {
-    notify("Unable to change mode");
-    return false;
-  }
-};
+  };
 
   const updateAlert = async (id: string, state: Alert["state"]) => {
     try {

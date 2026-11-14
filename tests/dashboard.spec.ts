@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { sensors } from "../src/config/sensors";
 import { defaultSettings } from "../src/config/dashboard";
 test.describe.configure({ mode: "serial" });
 test.beforeEach(async ({ request }) => {
@@ -50,7 +51,9 @@ test("node detail and topology inspection are interactive", async ({
   await page.locator("a.device-cell").first().click();
   await expect(page.locator("h1")).toHaveText("NODE-01");
   await expect(page.getByText("Firmware", { exact: true })).toBeVisible();
-  await expect(page.locator('svg[aria-label$="history chart"]')).toHaveCount(7);
+  await expect(page.locator('svg[aria-label$="history chart"]')).toHaveCount(
+    sensors.length,
+  );
   await page.locator('nav a[href="#network"]').click();
   await page.getByRole("button", { name: "Inspect NODE-02" }).click();
   await expect(page.getByRole("dialog")).toBeVisible();

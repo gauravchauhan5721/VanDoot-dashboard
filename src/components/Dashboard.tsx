@@ -20,6 +20,8 @@ import { DeviceControl, Reports } from "@/features/Operations";
 import { Settings } from "@/features/Settings";
 import { Simulation } from "@/features/Simulation";
 import { EmptyState, LoadingState, Panel } from "./ui";
+import { ForestWorkspace } from "@/features/forest/ForestWorkspace";
+import { modules, ForestModule } from "@/features/forest/contracts";
 function Application() {
   const [view, setView] = useState("overview");
   const { loading, data, error } = useDashboard();
@@ -98,11 +100,15 @@ function Application() {
         </Panel>
       );
   }
+  if (modules.includes(page as ForestModule))
+    content = <ForestWorkspace key={page} module={page as ForestModule} />;
   return (
     <DashboardLayout view={view}>
       {loading &&
       !data.nodes.length &&
-      !["settings", "system-health", "simulation"].includes(page) ? (
+      !["settings", "system-health", "simulation", ...modules].includes(
+        page,
+      ) ? (
         <LoadingState />
       ) : error &&
         !data.nodes.length &&

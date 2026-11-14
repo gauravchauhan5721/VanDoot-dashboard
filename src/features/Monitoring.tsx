@@ -346,11 +346,13 @@ export function SensorsPage() {
                         <td>
                           <StatusBadge
                             status={
-                              node.status === "offline"
-                                ? "offline"
-                                : bad
-                                  ? "warning"
-                                  : "healthy"
+                              !Number.isFinite(value)
+                                ? "unknown"
+                                : node.status === "offline"
+                                  ? "offline"
+                                  : bad
+                                    ? "warning"
+                                    : "healthy"
                             }
                           />
                         </td>

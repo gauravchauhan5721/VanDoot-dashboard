@@ -1,4 +1,5 @@
 "use client";
+import { finite } from "@/utils/format";
 import { useMemo, useState } from "react";
 import { Maximize, Minus, Plus, Radio, RotateCcw } from "lucide-react";
 import { useDashboard } from "@/hooks/useDashboard";
@@ -87,7 +88,7 @@ export function NetworkTopology({ large = false }: { large?: boolean }) {
                   fontSize="10"
                   fill={color}
                 >
-                  {link.rssi.toFixed(0)} dBm
+                  {finite(link.rssi, 0)} dBm
                 </text>
               </g>
             );
@@ -234,7 +235,7 @@ export function NetworkTopology({ large = false }: { large?: boolean }) {
                   fontSize="10"
                   fill="var(--muted)"
                 >
-                  ESP32 · {n.readings.battery.toFixed(0)}% battery
+                  ESP32 · {finite(n.readings.battery, 0)}% battery
                 </text>
               </g>
             );
