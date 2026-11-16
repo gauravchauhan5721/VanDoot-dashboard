@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
 import "./polish.css";
+import "./control-room.css";
 export const metadata: Metadata = {
-  title: "VANDOOT — Intelligent Monitoring",
+  title: "VanDoot | Forest control room",
   description:
-    "Intelligent Distributed Monitoring & Communication. Your entire IoT network, one clear picture.",
+    "Forest monitoring, node media, and evidence review for rangers.",
 };
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

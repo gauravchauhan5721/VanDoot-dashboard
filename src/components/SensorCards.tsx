@@ -32,7 +32,7 @@ export function SensorCards({
   );
   return (
     <div className={`sensor-grid ${compact ? "compact" : ""}`}>
-      {(compact ? sensors.slice(0, 4) : sensors).map((sensor) => {
+      {(compact ? sensors.filter(s => s.featured) : sensors).map((sensor) => {
         const Icon = icons[sensor.id] || Activity;
         const values = nodes
           .map((n) => n.readings[sensor.id])
@@ -49,13 +49,13 @@ export function SensorCards({
             : mean < threshold.warning);
         return (
           <a
-            href={`#analytics/${sensor.id}`}
+            href={`#analytics/${sensor.id}/${nodeId || ""}`}
             className="sensor-card"
             key={sensor.id}
           >
             <div className="sensor-label">
               <Icon size={15} style={{ color: sensor.color }} />
-              <span>{sensor.name}</span>
+              <span>{sensor.hardware === "DHT22" ? "DHT22 " : ""}{sensor.name}</span>
             </div>
             <div className="sensor-value">
               {values.length ? display.value : "—"}
@@ -66,18 +66,11 @@ export function SensorCards({
               {!values.length
                 ? "No readings"
                 : warning
-                  ? "Above threshold"
+                  ? "Threshold crossed"
                   : sensor.id === "airQuality"
                     ? "Good"
                     : "Normal"}
-              <svg viewBox="0 0 65 20">
-                <polyline
-                  points="0,14 7,14 12,9 18,11 23,7 28,10 34,8 40,9 47,5 53,7 59,5 65,5"
-                  fill="none"
-                  stroke={sensor.color}
-                  strokeWidth="1.3"
-                />
-              </svg>
+
             </div>
           </a>
         );

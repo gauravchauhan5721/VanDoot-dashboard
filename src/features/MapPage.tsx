@@ -8,8 +8,8 @@ export function MapPage() {
   const [selected, setSelected] = useState("");
   const [zoom, setZoom] = useState(1);
   const [coverage, setCoverage] = useState(true);
-  const devices = [...data.gateways, ...data.nodes];
-  const center = data.gateways[0]?.location || { lat: 12.9716, lng: 77.5946 };
+  const devices = [...data.gateways, ...data.nodes].filter(d => Number.isFinite(d.location.lat) && Number.isFinite(d.location.lng));
+  const center = devices[0]?.location || { lat: 0, lng: 0 };
   const project = (lat: number, lng: number) => ({
     x: 480 + (lng - center.lng) * 110000 * zoom,
     y: 270 - (lat - center.lat) * 110000 * zoom,
@@ -20,7 +20,7 @@ export function MapPage() {
       <div className="info-banner">
         <MapPin size={18} />
         {settings.mode === "demo"
-          ? "DEMO LOCATIONS · Simulated facility in Bengaluru, India."
+          ? "DEMO LOCATIONS · Illustrative forest watch area."
           : "Device coordinates from your gateway."}{" "}
         This is an offline coordinate map; coverage rings are illustrative, not
         a radio survey.
@@ -63,13 +63,13 @@ export function MapPage() {
               </g>
               <g fill="var(--muted)" fontSize="10" letterSpacing="2">
                 <text x="308" y="308">
-                  PRODUCTION FLOOR
+                  PINE RIDGE
                 </text>
                 <text x="539" y="209">
-                  WAREHOUSE
+                  RIVER TRAIL
                 </text>
                 <text x="566" y="497">
-                  OUTDOOR FACILITY
+                  SOUTH BOUNDARY
                 </text>
                 <text x="54" y="145">
                   ACCESS ROAD
@@ -124,10 +124,11 @@ export function MapPage() {
                     role="button"
                     tabIndex={0}
                     aria-label={`View location ${d.id}`}
+                    aria-pressed={selected === d.id}
                     key={d.id}
                     onClick={() => setSelected(d.id)}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") setSelected(d.id);
+                      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelected(d.id); }
                     }}
                   >
                     <circle
@@ -228,6 +229,7 @@ export function MapPage() {
           </div>
           {device && (
             <div className="location-detail">
+              {data.nodes.some(n => n.id === device.id) && <a className="button primary" href={`#node-media/${encodeURIComponent(device.id)}`}>View live now</a>}
               <StatusBadge status={device.status} />
               <h3>{device.name}</h3>
               <DetailGrid

@@ -1,10 +1,9 @@
 // Static preview of the same application. Local API routes remain in the repository.
-import { mkdtemp, cp, writeFile, symlink, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { mkdtemp, cp, writeFile, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 const root = process.cwd();
-const target = await mkdtemp(join(tmpdir(), "vandoot-preview-"));
+const target = await mkdtemp(join(root, ".preview-build-"));
 try {
   for (const file of [
     "src",
@@ -16,11 +15,6 @@ try {
   ])
     await cp(join(root, file), join(target, file), { recursive: true });
   await rm(join(target, "src/app/api"), { recursive: true });
-  await symlink(
-    join(root, "node_modules"),
-    join(target, "node_modules"),
-    "dir",
-  );
   await writeFile(
     join(target, "next.config.mjs"),
     `export default {output:'export',images:{unoptimized:true},turbopack:{root:${JSON.stringify(root)}}};`,

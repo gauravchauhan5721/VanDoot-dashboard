@@ -1,4 +1,5 @@
 "use client";
+import { useClock } from "@/hooks/useClock";
 import { useState } from "react";
 import {
   ArrowDown,
@@ -21,6 +22,7 @@ export function Analytics({
   nodeId?: string;
 }) {
   const { data, settings, notify } = useDashboard();
+  const now = useClock();
   const [selectedNode, setNode] = useState(nodeId || "all");
   const [selectedSensor, setSensor] = useState(sensorId || "temperature");
   const [range, setRange] = useState(24);
@@ -36,7 +38,7 @@ export function Analytics({
     .filter(
       (p) =>
         nodes.some((n) => n.id === p.nodeId) &&
-        new Date(p.timestamp).getTime() >= Date.now() - range * 3600000,
+        new Date(p.timestamp).getTime() >= now - range * 3600000,
     )
     .map((p) =>
       sensor.id === "temperature" && settings.units === "imperial"

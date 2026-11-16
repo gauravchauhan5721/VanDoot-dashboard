@@ -1,4 +1,6 @@
 "use client";
+import { finite } from "@/utils/format";
+import { useClock } from "@/hooks/useClock";
 import { useEffect, useState } from "react";
 import {
   Activity,
@@ -26,6 +28,7 @@ import { sensors } from "@/config/sensors";
 import { ago, number } from "@/utils/format";
 export function LiveMonitoring() {
   const { data, paused, setPaused, settings } = useDashboard();
+  const now = useClock();
   return (
     <>
       <div className="section-toolbar">
@@ -48,9 +51,7 @@ export function LiveMonitoring() {
         >
           <Chart
             data={data.history
-              .filter(
-                (p) => new Date(p.timestamp).getTime() > Date.now() - 3600000,
-              )
+              .filter((p) => new Date(p.timestamp).getTime() > now - 3600000)
               .map((p) =>
                 settings.units === "imperial"
                   ? {
@@ -99,9 +100,11 @@ export function NetworkPage() {
           label="Average RSSI"
           value={
             data.links.length
-              ? (
-                  data.links.reduce((a, l) => a + l.rssi, 0) / data.links.length
-                ).toFixed(0)
+              ? finite(
+                  data.links.reduce((a, l) => a + l.rssi, 0) /
+                    data.links.length,
+                  0,
+                )
               : "—"
           }
           suffix="dBm"
@@ -197,7 +200,7 @@ export function GatewayPage() {
                   label="CPU temperature"
                   value={(g.temperature / 85) * 100}
                   color="var(--amber)"
-                  detail={`${g.temperature.toFixed(1)} °C`}
+                  detail={`${finite(g.temperature, 1)} °C`}
                 />
               </div>
             </div>
@@ -338,7 +341,7 @@ export function SensorsPage() {
                           </span>
                         </td>
                         <td>{node.id}</td>
-                        <td>{value?.toFixed(sensor.precision) ?? "—"}</td>
+                        <td>{finite(value, sensor.precision)}</td>
                         <td>{sensor.unit}</td>
                         <td className="muted">
                           {sensor.min} to {sensor.max}

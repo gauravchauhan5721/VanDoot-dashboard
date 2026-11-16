@@ -12,7 +12,8 @@ export const defaultSettings: Settings = {
   nodeOverrides: {},
   gatewayName: "Primary Gateway",
 };
-export const navigation = [
+type NavigationSection = { section: string; items: [string, string, string][] };
+export const navigation: NavigationSection[] = [
   {
     section: "WORKSPACE",
     items: [
@@ -36,6 +37,17 @@ export const navigation = [
     ],
   },
   {
+    section: "FOREST PROTECTION",
+    items: [
+      ["forest/incidents", "Incident review", "ShieldCheck"],
+      ["forest/camera", "Test a model", "ScanEye"],
+      ["forest/fusion", "Threat verification", "ShieldCheck"],
+      ["forest/rangers", "Ranger registry", "Users"],
+      ["forest/models", "Model registry", "Boxes"],
+      ["forest/integration", "Hardware integration", "Radio"],
+    ],
+  },
+  {
     section: "MANAGEMENT",
     items: [
       ["device-control", "Device Control", "SlidersHorizontal"],
@@ -49,7 +61,7 @@ export const navigation = [
 export const pageDescriptions: Record<string, string> = {
   "node-media":
     "Camera streams, thermal frames and sound detections for every node.",
-  overview: "Your entire network. One clear picture.",
+  overview: "Know where to look. See what happened.",
   "live-monitoring": "A real-time pulse of your distributed sensor network.",
   nodes: "Monitor, manage, and explore your connected devices.",
   network: "Every connection, every hop. Your LoRaMesh at a glance.",

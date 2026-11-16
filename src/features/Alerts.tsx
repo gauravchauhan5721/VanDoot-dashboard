@@ -17,12 +17,24 @@ import {
   StatusBadge,
 } from "@/components/ui";
 import { Alert } from "@/types";
-export function Alerts({ alertId }: { alertId?: string }) {
+import { AlertEvidence } from "./media/AlertEvidence";
+export function Alerts({
+  alertId,
+  queryString = "",
+}: {
+  alertId?: string;
+  queryString?: string;
+}) {
   const { data, updateAlert } = useDashboard();
-  const [query, setQuery] = useState("");
-  const [severity, setSeverity] = useState("all");
-  const [state, setState] = useState("all");
-  const [selected, setSelected] = useState<string | null>(alertId || null);
+  const params = new URLSearchParams(queryString);
+  const query = params.get("q") || "";
+  const severity = params.get("severity") || "all";
+  const state = params.get("state") || "all";
+  const filter = (key: string, value: string) => {
+    const next = new URLSearchParams(queryString);
+    next.set(key, value);
+    window.location.hash = `alerts?${next}`;
+  };
   const [busy, setBusy] = useState(false);
   const filtered = data.alerts.filter(
     (a) =>
@@ -32,7 +44,7 @@ export function Alerts({ alertId }: { alertId?: string }) {
       (severity === "all" || a.severity === severity) &&
       (state === "all" || a.state === state),
   );
-  const detail = data.alerts.find((a) => a.id === selected);
+  const detail = data.alerts.find((a) => a.id === alertId);
   const act = async (a: Alert, next: Alert["state"]) => {
     setBusy(true);
     await updateAlert(a.id, next);
@@ -84,13 +96,13 @@ export function Alerts({ alertId }: { alertId?: string }) {
               aria-label="Search alerts"
               placeholder="Search alerts or nodes…"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => filter("q", e.target.value)}
             />
           </label>
           <select
             aria-label="Alert severity"
             value={severity}
-            onChange={(e) => setSeverity(e.target.value)}
+            onChange={(e) => filter("severity", e.target.value)}
           >
             <option value="all">All severities</option>
             <option value="info">Info</option>
@@ -100,7 +112,7 @@ export function Alerts({ alertId }: { alertId?: string }) {
           <select
             aria-label="Alert state"
             value={state}
-            onChange={(e) => setState(e.target.value)}
+            onChange={(e) => filter("state", e.target.value)}
           >
             <option value="all">All states</option>
             <option value="active">Active</option>
@@ -131,12 +143,12 @@ export function Alerts({ alertId }: { alertId?: string }) {
                 </span>
                 <div className="full-alert-copy">
                   <div>
-                    <button
-                      onClick={() => setSelected(a.id)}
+                    <a
+                      href={`#alerts/${encodeURIComponent(a.id)}${queryString ? `?${queryString}` : ""}`}
                       className="alert-title"
                     >
                       {a.title}
-                    </button>
+                    </a>
                     <StatusBadge status={a.severity} />
                   </div>
                   <p>{a.message}</p>
@@ -167,38 +179,42 @@ export function Alerts({ alertId }: { alertId?: string }) {
                       Resolve
                     </button>
                   )}
-                  <button
+                  <a
                     className="text-link"
-                    onClick={() => setSelected(a.id)}
+                    href={`#alerts/${encodeURIComponent(a.id)}${queryString ? `?${queryString}` : ""}`}
                   >
                     Details →
-                  </button>
+                  </a>
                 </div>
               </div>
             ))}
           </div>
         )}
       </Panel>
+      {alertId && !detail && (
+        <Panel>
+          <EmptyState
+            title="Evidence unavailable in this session"
+            description="This event is no longer in the received event history. Load its saved incident record, or return to alerts."
+            action={
+              <a className="button" href="#forest/incidents">
+                Open incident review
+              </a>
+            }
+          />
+        </Panel>
+      )}
       {detail && (
-        <Modal title="Alert details" onClose={() => setSelected(null)}>
+        <Modal
+          title="Alert details"
+          onClose={() => {
+            if (window.history.state?.vandootEvidence) window.history.back();
+            else
+              window.location.hash = `alerts${queryString ? `?${queryString}` : ""}`;
+          }}
+        >
           <div className="modal-body">
-            <StatusBadge status={detail.severity} />
-            <h3>{detail.title}</h3>
-            <p>{detail.message}</p>
-            <div className="stat-list">
-              <div>
-                <span>Device</span>
-                <a href={`#nodes/${detail.nodeId}`}>{detail.nodeId}</a>
-              </div>
-              <div>
-                <span>Timestamp</span>
-                <strong>{new Date(detail.timestamp).toLocaleString()}</strong>
-              </div>
-              <div>
-                <span>Status</span>
-                <StatusBadge status={detail.state} />
-              </div>
-            </div>
+            <AlertEvidence key={detail.id} alert={detail} />
             <div className="modal-actions">
               {detail.state === "active" && (
                 <button

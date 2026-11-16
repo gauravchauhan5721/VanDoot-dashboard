@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element -- Uploaded evidence previews are local blob URLs with matched detection coordinates. */
 import { useEffect, useState } from "react";
 import { Panel } from "@/components/ui";
 import { useDashboard } from "@/hooks/useDashboard";
@@ -11,8 +12,19 @@ import {
 } from "./contracts";
 import "./forest.css";
 let workspaceToken = "";
-export function ForestWorkspace({ module }: { module: ForestModule }) {
+import { AlertEvidence } from "@/features/media/AlertEvidence";
+import { nearbyReadings } from "@/utils/telemetry";
+export function ForestWorkspace({
+  module,
+  alertId,
+  queryString = "",
+}: {
+  module: ForestModule;
+  alertId?: string;
+  queryString?: string;
+}) {
   const { data, settings } = useDashboard();
+  const observation = data.alerts.find((a) => a.id === alertId);
   const [token, setToken] = useState(workspaceToken);
   const [records, setRecords] = useState<ForestRecord[]>([]);
   const [message, setMessage] = useState("");
@@ -21,17 +33,22 @@ export function ForestWorkspace({ module }: { module: ForestModule }) {
   const [preview, setPreview] = useState("");
   const [result, setResult] = useState<Inference | null>(null);
   const [frame, setFrame] = useState<number[]>([]);
-  const [title, setTitle] = useState("");
-  const [node, setNode] = useState("");
-  const [note, setNote] = useState("");
-  const [evidence, setEvidence] = useState("");
+  const [title, setTitle] = useState(observation?.title || "");
+  const [node, setNode] = useState(observation?.nodeId || "");
+  const [note, setNote] = useState(observation?.message || "");
+  const [evidence, setEvidence] = useState(
+    observation?.evidence?.imageUrl?.startsWith("https:")
+      ? observation.evidence.imageUrl
+      : "",
+  );
   const [identity, setIdentity] = useState("");
   const [lookup, setLookup] = useState("");
   const [review, setReview] = useState("");
-  const [filter, setFilter] = useState("all");
+  const filter = new URLSearchParams(queryString).get("state") || "all";
   const headers = { Authorization: `Bearer ${token}` };
   useEffect(() => {
     if (!file) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- release the external file preview when removed.
       setPreview("");
       return;
     }
@@ -154,6 +171,11 @@ export function ForestWorkspace({ module }: { module: ForestModule }) {
             : "LIVE SENSOR CONTEXT"}
         </span>
       </div>
+      {observation && (
+        <Panel title="Observation flagged for review">
+          <AlertEvidence alert={observation} />
+        </Panel>
+      )}
       <div className="forest-access">
         <label>
           Workspace access token
@@ -418,9 +440,22 @@ export function ForestWorkspace({ module }: { module: ForestModule }) {
                   nodeId: node,
                   source: result ? "recorded-inference" : "manual-review",
                   sensorSource: settings.mode,
-                  observedAt: new Date().toISOString(),
-                  sensorTimestamp: sensorNode?.lastSeen,
-                  readings: sensorNode?.readings,
+                  observedAt:
+                    observation?.timestamp || new Date().toISOString(),
+                  alertId: observation?.id,
+                  capturedEvidence: observation?.evidence,
+                  nearbyReadings: observation
+                    ? observation.readings ||
+                      nearbyReadings(
+                        data.history,
+                        observation.nodeId,
+                        observation.timestamp,
+                      )
+                    : undefined,
+                  sensorTimestamp: observation
+                    ? undefined
+                    : sensorNode?.lastSeen,
+                  readings: observation ? undefined : sensorNode?.readings,
                   inference: result || undefined,
                   thermal: values || undefined,
                   evidenceName: file?.name,
@@ -628,7 +663,14 @@ export function ForestWorkspace({ module }: { module: ForestModule }) {
                 Incident state
                 <select
                   value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
+                  onChange={(e) => {
+                    const params = new URLSearchParams(queryString);
+                    params.set("state", e.target.value);
+                    window.location.hash =
+                      window.location.hash.split("?")[0] +
+                      "?" +
+                      params.toString();
+                  }}
                 >
                   {[
                     "all",
@@ -716,7 +758,7 @@ export function ForestWorkspace({ module }: { module: ForestModule }) {
                         {["acknowledged", "resolved", "false-positive"].map(
                           (state) => (
                             <button
-                              disabled={busy || !review.trim()}
+                              disabled={busy || !token || !review.trim()}
                               key={state}
                               onClick={() =>
                                 save(

@@ -2,31 +2,31 @@ import { NodeConfig } from "@/types";
 export const nodeConfigs: NodeConfig[] = [
   {
     id: "NODE-01",
-    name: "Environment sensor",
+    name: "Forest watch node",
     gatewayId: "GW-001",
     parentId: "GW-001",
     firmware: "v1.2.4",
     location: {
       lat: 12.9719,
       lng: 77.5933,
-      label: "Zone A · Production floor",
+      label: "Zone A · Pine ridge",
     },
   },
   {
     id: "NODE-02",
-    name: "Environment sensor",
+    name: "Forest watch node",
     gatewayId: "GW-001",
     parentId: "GW-001",
     firmware: "v1.2.4",
-    location: { lat: 12.9728, lng: 77.5955, label: "Zone B · Warehouse" },
+    location: { lat: 12.9728, lng: 77.5955, label: "Zone B · River trail" },
   },
   {
     id: "NODE-03",
-    name: "Environment sensor",
+    name: "Forest watch node",
     gatewayId: "GW-001",
     parentId: "GW-001",
     firmware: "v1.2.3",
-    location: { lat: 12.9703, lng: 77.5962, label: "Zone C · Outdoor" },
+    location: { lat: 12.9703, lng: 77.5962, label: "Zone C · South boundary" },
   },
 ];
 export const gatewayConfigs = [
@@ -38,7 +38,7 @@ export const gatewayConfigs = [
     location: {
       lat: 12.9716,
       lng: 77.5946,
-      label: "Control room · Main facility",
+      label: "Control room · Ranger station",
     },
   },
 ];
