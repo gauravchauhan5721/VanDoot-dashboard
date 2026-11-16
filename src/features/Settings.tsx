@@ -23,6 +23,7 @@ export function Settings() {
   const [busy, setBusy] = useState(false);
   const [checking, setChecking] = useState(false);
   const [connection, setConnection] = useState("");
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronize asynchronously loaded persistent preferences.
   useEffect(() => setDraft(settings), [settings]);
   const change = <K extends keyof SettingsType>(
     key: K,

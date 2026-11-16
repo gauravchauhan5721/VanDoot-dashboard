@@ -28,13 +28,24 @@ import {
   Zap,
   CalendarDays,
   RefreshCw,
+  ShieldCheck,
+  ScanEye,
+  Users,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { navigation, pageDescriptions } from "@/config/dashboard";
 import { useDashboard } from "@/hooks/useDashboard";
+import { useClock } from "@/hooks/useClock";
+import { ago } from "@/utils/format";
+import { titles, ForestModule } from "@/features/forest/contracts";
 import { download } from "@/utils/format";
 import { Modal } from "@/components/ui";
 const icons: Record<string, typeof Activity> = {
   Activity,
+  ShieldCheck,
+  ScanEye,
+  Users,
   Bell,
   Boxes,
   ChartNoAxesCombined,
@@ -60,17 +71,28 @@ export function DashboardLayout({
 }) {
   const { data, settings, saveSettings, error, refresh, notify, loading } =
     useDashboard();
+  const now = useClock();
+  const lastTelemetry = data.nodes
+    .map((n) => n.lastSeen)
+    .filter((t) => Date.parse(t) <= Math.max(now, Date.parse(data.timestamp) || 0))
+    .sort()
+    .at(-1);
   const [mobile, setMobile] = useState(false);
   const [search, setSearch] = useState("");
   const [focused, setFocused] = useState(false);
   const [help, setHelp] = useState(false);
   const [account, setAccount] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
-  const page = view.split("/")[0];
-  const item = navigation.flatMap((s) => s.items).find((i) => i[0] === page);
+  const path = view.split("?")[0];
+  const page = path.split("/")[0];
+  const item = navigation
+    .flatMap((s) => s.items)
+    .find((i) => i[0] === path || i[0] === page);
   const title = view.startsWith("nodes/")
     ? view.split("/")[1]
-    : item?.[1] || "Overview";
+    : page === "forest"
+      ? titles[path.split("/")[1] as ForestModule] || "Forest protection"
+      : item?.[1] || "Overview";
   const alertCount = data.alerts.filter(
     (a) => a.state === "active" && a.severity !== "info",
   ).length;
@@ -89,6 +111,7 @@ export function DashboardLayout({
     return () => window.removeEventListener("keydown", key);
   }, []);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- close navigation after browser history changes.
     setMobile(false);
   }, [view]);
   const results = [
@@ -105,6 +128,16 @@ export function DashboardLayout({
     .slice(0, 7);
   return (
     <div className="app-shell">
+      <a
+        className="skip-link"
+        href="#main-content"
+        onClick={(e) => {
+          e.preventDefault();
+          document.getElementById("main-content")?.focus();
+        }}
+      >
+        Skip to main content
+      </a>
       {mobile && (
         <div className="sidebar-scrim" onClick={() => setMobile(false)} />
       )}
@@ -116,7 +149,7 @@ export function DashboardLayout({
             <i />
           </span>
           <span>
-            VANDOOT<small>CONNECTED. INTELLIGENT.</small>
+            VANDOOT<small>FOREST INTELLIGENCE</small>
           </span>
         </a>
         <div className="workspace-selector">
@@ -124,13 +157,13 @@ export function DashboardLayout({
             <Network size={17} />
           </span>
           <span>
-            Main workspace<small>Industrial IoT network</small>
+            Forest watch<small>Ranger control room</small>
           </span>
           <a href="#settings" aria-label="Workspace settings">
             <ChevronDown size={14} />
           </a>
         </div>
-        <nav>
+        <nav aria-label="Main navigation">
           {navigation.map((section) => (
             <div className="nav-section" key={section.section}>
               <p>{section.section}</p>
@@ -139,8 +172,10 @@ export function DashboardLayout({
                 return (
                   <a
                     href={`#${id}`}
-                    aria-current={page === id ? "page" : undefined}
-                    className={`nav-item ${page === id ? "active" : ""}`}
+                    aria-current={
+                      page === id || path === id ? "page" : undefined
+                    }
+                    className={`nav-item ${page === id || path === id ? "active" : ""}`}
                     key={id}
                   >
                     <Icon size={17} strokeWidth={1.7} />
@@ -170,7 +205,7 @@ export function DashboardLayout({
             <p>
               {settings.mode === "demo"
                 ? "Explore freely. No hardware needed."
-                : "Connected to your configured backend."}
+                : "Configured gateway · check telemetry status."}
             </p>
             <a href="#settings">
               {settings.mode === "demo"
@@ -202,8 +237,9 @@ export function DashboardLayout({
           <div className="breadcrumb">
             <button
               className="icon-button mobile-menu"
-              aria-label="Open navigation"
-              onClick={() => setMobile(true)}
+              aria-label={mobile ? "Close navigation" : "Open navigation"}
+              aria-expanded={mobile}
+              onClick={() => setMobile(!mobile)}
             >
               <Menu size={20} />
             </button>
@@ -221,7 +257,14 @@ export function DashboardLayout({
                 ref={searchRef}
                 value={search}
                 onFocus={() => setFocused(true)}
-                onBlur={() => setTimeout(() => setFocused(false), 150)}
+                onBlur={(event) => {
+                  if (
+                    !event.currentTarget.parentElement?.contains(
+                      event.relatedTarget,
+                    )
+                  )
+                    setFocused(false);
+                }}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search anything…"
                 aria-label="Search dashboard"
@@ -252,6 +295,7 @@ export function DashboardLayout({
             </div>
             <div className="mode-switch" aria-label="Data mode">
               <button
+                aria-pressed={settings.mode === "demo"}
                 className={settings.mode === "demo" ? "active" : ""}
                 onClick={() => {
                   if (settings.mode !== "demo")
@@ -262,6 +306,7 @@ export function DashboardLayout({
                 Demo
               </button>
               <button
+                aria-pressed={settings.mode === "live"}
                 className={settings.mode === "live" ? "active" : ""}
                 onClick={() => {
                   if (settings.mode !== "live")
@@ -271,6 +316,22 @@ export function DashboardLayout({
                 Live
               </button>
             </div>
+            <button
+              className="icon-button theme-toggle"
+              aria-label={`Switch to ${settings.theme === "dark" ? "light" : "dark"} theme`}
+              onClick={() =>
+                void saveSettings({
+                  ...settings,
+                  theme: settings.theme === "dark" ? "light" : "dark",
+                })
+              }
+            >
+              {settings.theme === "dark" ? (
+                <Sun size={18} />
+              ) : (
+                <Moon size={18} />
+              )}
+            </button>
             <span className="topbar-divider" />
             <a
               href="#alerts"
@@ -289,7 +350,7 @@ export function DashboardLayout({
             </button>
           </div>
         </header>
-        <main>
+        <main id="main-content" tabIndex={-1}>
           <div className="page-heading">
             <div className="page-title-line">
               <div>
@@ -298,7 +359,11 @@ export function DashboardLayout({
                   {page === "overview" && (
                     <span className={`system-pill ${error ? "error" : ""}`}>
                       <i />
-                      {error ? "Connection unavailable" : "System operational"}
+                      {error
+                        ? "Connection unavailable"
+                        : settings.mode === "demo"
+                          ? "Demo scenario"
+                          : "Gateway connected"}
                     </span>
                   )}
                 </div>
@@ -343,14 +408,16 @@ export function DashboardLayout({
                 {settings.mode === "demo" ? "DEMO MODE" : "LIVE MODE"}
                 <span className="dot-separator">·</span>
                 {settings.mode === "demo"
-                  ? "Simulated data. Real possibilities."
+                  ? "Synthetic telemetry & media"
                   : error
                     ? "Hardware not connected"
                     : "Gateway telemetry"}
               </span>
               <span>
                 <RefreshCw size={11} className={loading ? "spin" : ""} />
-                Updated {loading ? "…" : "just now"}
+                {lastTelemetry
+                  ? `Telemetry ${ago(lastTelemetry)}`
+                  : "No telemetry received"}
                 <span className="dot-separator">·</span>Every{" "}
                 {settings.refreshInterval}s
               </span>

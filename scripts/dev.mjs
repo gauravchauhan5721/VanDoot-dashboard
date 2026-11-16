@@ -5,7 +5,16 @@ const args = process.argv
   .map((a) => (a === "--host" ? "--hostname" : a));
 const child = spawn(
   process.execPath,
-  ["node_modules/next/dist/bin/next", "dev", ...args],
+  [
+    "node_modules/next/dist/bin/next",
+    "dev",
+    ...(process.platform === "win32" &&
+    !args.includes("--turbopack") &&
+    !args.includes("--webpack")
+      ? ["--webpack"]
+      : []),
+    ...args,
+  ],
   { stdio: "inherit", env: process.env },
 );
 for (const signal of ["SIGINT", "SIGTERM"])

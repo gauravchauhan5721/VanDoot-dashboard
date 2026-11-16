@@ -1,37 +1,66 @@
-# Per-node camera, thermal and sound section
+# Node media setup
 
-The original `origin/main` overview, navigation, node pages, charts, map, simulation and styles are restored. The only new visible navigation item is **AI Camera & Sound** (`#node-media`). Existing pages have not been redesigned.
+Open `#node-media`, choose a hardware node, then **Configure & test sources**. Each source is optional and independent. URLs are stored in this browser under the existing per-mode keys `vandoot-media-demo` and `vandoot-media-live`; a node change cancels old polls. Saving a URL does not mark a node online. Demo always uses bundled synthetic media, without paid keys. Switch to Live in the full local app for physical sources.
 
-Select all nodes or one node; configure each node independently and click Connect sources. Saving settings does not mark a node online. URLs are stored in this browser's localStorage, separately by Demo/Live mode. No credentials should be included in URLs. The hosted static preview has no laptop gateway; use `npm ci` then `npm run dev` locally for LAN devices. Existing backend behavior is retained.
+| Source | Contract | Behaviour |
+| --- | --- | --- |
+| ESP32-CAM | HTTP(S) MJPEG stream | Native image stream, fullscreen button, retry; frame capture age is unavailable |
+| Latest image | HTTP(S) JPEG/PNG/WebP URL | Manual reload; capture time is unknown, so never used as an alert's matching frame |
+| MLX90640 | JSON below | Independent 3-second poll, exactly 32×24 temperatures, stale/disconnected labels, touch/keyboard pixel inspector |
+| Microphone | Browser-playable WAV/MP3/OGG/compatible stream | Manual playback only; raw PCM/UDP needs a gateway adapter |
+| Detection events | Array, or status envelope below | Independent 3-second poll; at most 200 events; only selected node accepted |
 
-## Sources
-- Camera: ESP32-CAM MJPEG URL, commonly the stream endpoint exposed by your firmware. The viewer loads it as an image; it does not claim frame-level freshness or draw unsynchronized boxes.
-- Detected image: static/latest image URL or imageUrl from a camera detection event. Prefer a unique image URL per detection. This is visibly distinguished from the live stream.
-- Thermal: GET JSON every 3 seconds, at most 4096 pixels. MLX90640 uses width 32, height 24 and 768 finite temperatures in °C. The nodeId must match the selected registered node. Newer frames replace older frames; stale, stopped and disconnected states are shown. No spatial overlay on the camera image.
-- Audio: optional browser-playable audio URL with manual playback. A generic raw PCM/UDP stream is not browser-playable without an adapter.
-- Events: GET a JSON array of up to 200 events every 3 seconds. Nonmatching node IDs are discarded. Model labels/scores are displayed from the source, not fabricated by the UI. AI inference must run on your configured gateway/server.
+Use unique immutable capture URLs in events. Browser-loaded URLs cannot include credentials or secret query parameters. Keep provider credentials on the server. JSON sources must allow the dashboard origin through CORS. An HTTPS page may block HTTP cameras; run the full app locally on the sensor network and use suitable origins. No arbitrary URL proxy is provided.
 
-Thermal example (2×2 test; replace with the actual sensor dimensions):
-```json
-{"nodeId":"NODE-01","width":2,"height":2,"timestamp":"2026-11-15T00:00:00Z","values":[24,25,26,27]}
+## Thermal frame
+
+A complete valid fixture can be generated in JavaScript:
+
+```js
+const frame = {
+  nodeId: "NODE-01", width: 32, height: 24,
+  timestamp: new Date().toISOString(),
+  values: Array(32 * 24).fill(25.5), // replace with row-major measured °C
+};
 ```
-Detection examples:
+
+The node ID must match. All 768 values must be finite numbers. Wrong dimensions, missing timestamps and incomplete frames are rejected. Newer frames replace older ones. The relative heat palette shows min/max; a warm pixel does not establish identity or confirm a fire.
+
+## Detection envelope
+
 ```json
-[
- {"nodeId":"NODE-01","id":"frame-123-person","timestamp":"2026-11-15T00:00:00Z","type":"camera","label":"Person detected","score":0.82,"model":"your-validated-model/version","imageUrl":"http://localhost:8000/evidence/frame-123.jpg"},
- {"nodeId":"NODE-01","id":"audio-123","timestamp":"2026-11-15T00:00:00Z","type":"audio","label":"Chainsaw-like sound","score":0.74,"model":"your-validated-audio-model/version"},
- {"nodeId":"NODE-01","id":"level-123","timestamp":"2026-11-15T00:00:00Z","type":"sound-level","label":"Sound intensity","value":410,"unit":"ADC raw"},
- {"nodeId":"NODE-01","id":"thermal-123","timestamp":"2026-11-15T00:00:00Z","type":"thermal","label":"Hotspot detected","model":"your-threshold-rule/version"}
-]
+{
+  "modelStatus": "connected",
+  "events": [{
+    "nodeId": "NODE-01",
+    "id": "detection-123",
+    "timestamp": "2026-11-16T12:00:00Z",
+    "type": "camera",
+    "label": "Possible smoke",
+    "severity": "warning",
+    "model": "your-validated-model",
+    "version": "v1",
+    "score": 0.82,
+    "imageUrl": "http://gateway.local/evidence/frame-123.jpg",
+    "frameId": "frame-123",
+    "evidenceFrameId": "frame-123",
+    "box": [0.1, 0.2, 0.4, 0.3]
+  }]
+}
 ```
-Examples describe the adapter format only; they are not actual detections. Replace timestamps with current capture times. A basic sound sensor reports intensity, not sound identity; classification requires microphone audio and a validated model.
 
-JSON endpoints must allow the dashboard origin via CORS. HTTPS hosting may block HTTP/private-LAN feeds; use the local dashboard for ESP32 testing. No server-side arbitrary URL proxy has been added. Thermal or event endpoint errors leave previous evidence labelled as last received data.
+This example is a contract, not a real detection. Replace its timestamp with the actual capture time. `type` is `camera`, `thermal`, `audio`, or `sound-level`. `audioUrl` attaches captured audio. `score` is optional, 0–1; model/version are optional strings. Sound-level events may report `value` and `unit: "ADC raw"`; they do not constitute classification.
 
-## Checks and limits
-TypeScript and production static build are checked. No physical ESP32, thermal sensor, microphone, AI service or recordings were supplied, so actual connectivity and inference accuracy remain unverified. This change adds media views and adapter inputs; it does not train or install AI models, change incident storage, or implement LoRa media transport.
+Boxes use normalized x/y/width/height within the image and are drawn **only** when `frameId` equals `evidenceFrameId`. No boxes appear on the current MJPEG feed. Prefer immutable capture images. A configured latest-image URL is never substituted for missing alert evidence.
 
-Camera and thermal event labels can include person and forest-fire detections, with source model/version, score, timestamp and imageUrl. Thermal detection images open separately from the heatmap. This UI does not supply or validate a person/fire model; low-resolution thermal arrays and hot pixels alone cannot establish identity or confirm fire.
+`modelStatus` may be `connected` or `disconnected`. Missing status displays “Model status not reported”; an empty array displays “No detections received”. Endpoint failure means unreachable, not an inferred model failure. Camera, thermal and audio continue independently.
 
-## Built-in demo media
-Demo mode includes two original 10-second MP4 animations (person and fire scene; illustrative thermal view) and three original 8-second WAV effects (ambience, motor-like buzz, impacts). All are explicitly synthetic; labels and boxes are scripted, not AI predictions. The same samples are reused across nodes for UI demonstration. Playback is manual, with no autoplay. Live mode never uses these files. Assets are bundled locally under public/demo; reproduce with python scripts/generate-demo-media.py (Pillow, NumPy, FFmpeg).
+## Evidence and review
+
+An event opens the alert view with node, capture time/time zone, image/audio and only reported model metadata. Nearby telemetry must be within ±30 seconds, with its own timestamps. “View live now” opens the current feed; “Open incident review” retains the observation for the existing authorized workflow. Alerts and readings held in memory do not survive a reload unless saved as an incident.
+
+## Bundled demo and hardware limits
+
+`public/demo` contains original synthetic video/posters/audio, reused across nodes. Labels and boxes are scripted, not inference. Playback is manual. The thermal view is a deterministic 32×24 fixture, not a measured frame. Reproduce video/audio assets with `python scripts/generate-demo-media.py` (Pillow, NumPy, FFmpeg).
+
+Use Settings for the gateway `/latest` and optional WebSocket URL. See `FOREST_WORKSPACE_SETUP.md` for credentials, migrations and model upload APIs. Uploads remain under the secondary **Test a model** actions. No model weights are bundled; real ESP32 connectivity, thermal calibration, audio encoding, model accuracy and LAN/browser restrictions need hardware verification.

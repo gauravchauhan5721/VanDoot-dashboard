@@ -12,18 +12,8 @@ const object = (v: unknown): v is Record<string, unknown> =>
   !!v && typeof v === "object" && !Array.isArray(v);
 const numeric = (v: unknown) =>
   typeof v === "number" && Number.isFinite(v) ? v : NaN;
-export const SENSOR_ALIASES: Record<string, string[]> = {
-  temperature: ["temperature", "temp"],
-  humidity: ["humidity"],
-  MQ2: ["MQ2", "mq2", "gas", "smoke"],
-  PIR: ["PIR", "pir", "motion"],
-  pm25: ["pm25", "PM2.5", "pm2_5"],
-  thermalMax: ["thermalMax", "thermal_max"],
-  soundLevel: ["soundLevel", "sound"],
-  battery: ["battery"],
-  rssi: ["rssi"],
-  snr: ["snr"],
-};
+import { SENSOR_ALIASES, sensorById } from "@/config/sensors";
+export { SENSOR_ALIASES } from "@/config/sensors";
 export function normalizeLatest(latest: unknown, now = Date.now()): Snapshot {
   if (!object(latest)) throw Error("Invalid gateway response");
   const nodes: SensorNode[] = [];
@@ -92,18 +82,7 @@ export function normalizeLatest(latest: unknown, now = Date.now()): Snapshot {
         nodeId: id,
         sensor,
         value,
-        unit:
-          sensor === "temperature" || sensor === "thermalMax"
-            ? "°C"
-            : sensor === "humidity" || sensor === "battery"
-              ? "%"
-              : sensor === "pm25"
-                ? "µg/m³"
-                : sensor === "rssi"
-                  ? "dBm"
-                  : sensor === "snr"
-                    ? "dB"
-                    : "raw",
+        unit: sensorById[sensor]?.unit || "raw",
         rssi: readings.rssi,
         snr: readings.snr,
         status: fresh ? "Received" : "Stale",
@@ -136,7 +115,7 @@ export function normalizeLatest(latest: unknown, now = Date.now()): Snapshot {
   };
 }
 export class LiveApiService implements DataService {
-  constructor(private endpoint: string) {}
+  constructor(private endpoint: string, private signal?: AbortSignal) {}
   private async request(path: string, init?: RequestInit): Promise<unknown> {
     if (!this.endpoint) throw Error("Configure the gateway URL in Settings.");
     const r = await fetch(`${this.endpoint.replace(/\/$/, "")}${path}`, {
@@ -146,7 +125,9 @@ export class LiveApiService implements DataService {
         ...(init?.body ? { "Content-Type": "application/json" } : {}),
         ...init?.headers,
       },
-      signal: AbortSignal.timeout(apiConfig.timeout),
+      signal: this.signal ? AbortSignal.any([this.signal, AbortSignal.timeout(apiConfig.timeout)]) : AbortSignal.timeout(apiConfig.timeout),
+      cache: "no-store",
+      credentials: "omit",
     });
     if (!r.ok) throw Error(`Gateway API error: HTTP ${r.status}`);
     return r.json();

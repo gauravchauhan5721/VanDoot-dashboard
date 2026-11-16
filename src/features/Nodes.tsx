@@ -22,7 +22,7 @@ import { NodeTable } from "@/components/NodeTable";
 import { SensorCards } from "@/components/SensorCards";
 import { Chart } from "@/components/Chart";
 import { sensors } from "@/config/sensors";
-import { ago, number } from "@/utils/format";
+import { ago, number, finite } from "@/utils/format";
 export function Nodes({ nodeId }: { nodeId?: string }) {
   const { data, settings } = useDashboard();
   const [query, setQuery] = useState("");
@@ -63,15 +63,17 @@ export function Nodes({ nodeId }: { nodeId?: string }) {
               ["Firmware", node.firmware],
               [
                 "Uptime",
-                `${Math.floor(node.uptime / 86400)}d ${Math.floor((node.uptime % 86400) / 3600)}h`,
+                Number.isFinite(node.uptime)
+                  ? `${Math.floor(node.uptime / 86400)}d ${Math.floor((node.uptime % 86400) / 3600)}h`
+                  : "—",
               ],
               ["Last seen", ago(node.lastSeen)],
               ["Gateway", node.gatewayId],
               ["Parent node", node.parentId],
               ["Next hop", node.parentId],
-              ["RSSI", `${node.readings.rssi} dBm`],
-              ["SNR", `${node.readings.snr} dB`],
-              ["Link quality", `${node.linkQuality}%`],
+              ["RSSI", `${finite(node.readings.rssi, 0)} dBm`],
+              ["SNR", `${finite(node.readings.snr)} dB`],
+              ["Link quality", `${finite(node.linkQuality, 0)}%`],
               ["Packets sent", number(node.packets)],
               ["Packets received", number(node.received)],
               ["Packets lost", number(node.lost)],
@@ -260,19 +262,21 @@ export function Nodes({ nodeId }: { nodeId?: string }) {
                 <small>{n.location.label}</small>
                 <div className="node-card-readings">
                   <span>
-                    {(settings.units === "imperial"
-                      ? (n.readings.temperature * 9) / 5 + 32
-                      : n.readings.temperature
-                    ).toFixed(1)}{" "}
+                    {finite(
+                      settings.units === "imperial"
+                        ? (n.readings.temperature * 9) / 5 + 32
+                        : n.readings.temperature,
+                      1,
+                    )}{" "}
                     {settings.units === "imperial" ? "°F" : "°C"}
                   </span>
                   <span>
                     <Battery size={15} />
-                    {n.readings.battery}%
+                    {finite(n.readings.battery, 0)}%
                   </span>
                   <span>
                     <Signal size={14} />
-                    {n.readings.rssi} dBm
+                    {finite(n.readings.rssi, 0)} dBm
                   </span>
                 </div>
               </a>

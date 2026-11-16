@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { sensors } from "../src/config/sensors";
 import { defaultSettings } from "../src/config/dashboard";
-test.describe.configure({ mode: "serial" });
+test.describe.configure({ mode: "default" });
 test.beforeEach(async ({ request }) => {
   const response = await request.put("/api/settings", {
     data: defaultSettings,
@@ -12,10 +12,10 @@ test("all workspace pages work without browser exceptions", async ({
   page,
 }) => {
   const errors: string[] = [];
-  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("pageerror", (error) => errors.push(`${page.url()}: ${error.stack || error.message}`));
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "LoRaMesh topology" }),
+    page.getByRole("heading", { name: "Eyes on the forest." }),
   ).toBeVisible();
   await expect(page.locator("tbody tr")).toHaveCount(3);
   await page.screenshot({
@@ -133,7 +133,7 @@ test("analytics filtering and log export work", async ({ page }) => {
 test("live mode never substitutes demo hardware", async ({ page, request }) => {
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "LoRaMesh topology" }),
+    page.getByRole("heading", { name: "Eyes on the forest." }),
   ).toBeVisible();
   await page
     .locator(".mode-switch")
@@ -165,8 +165,9 @@ test("settings persist and demo telemetry updates dynamically", async ({
     page.getByRole("spinbutton", { name: /Refresh interval/ }),
   ).toHaveValue("2");
   await page.locator('nav a[href="#overview"]').click();
-  await expect(page.locator(".sensor-value").first()).toContainText("°F");
-  const packets = page.locator(".kpi-value").nth(3);
+  await expect(page.locator(".reading strong").first()).toContainText("°F");
+  await page.locator('nav a[href="#nodes"]').click();
+  const packets = page.locator("tbody tr").first().locator("td").nth(7);
   const initial = Number((await packets.innerText()).replace(/\D/g, ""));
   await expect
     .poll(async () => Number((await packets.innerText()).replace(/\D/g, "")), {
@@ -175,10 +176,10 @@ test("settings persist and demo telemetry updates dynamically", async ({
     .toBeGreaterThan(initial);
 });
 test("mobile layout and sidebar stay within the viewport", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+  await page.setViewportSize({ width: 360, height: 844 });
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "LoRaMesh topology" }),
+    page.getByRole("heading", { name: "Eyes on the forest." }),
   ).toBeVisible();
   expect(
     await page.evaluate(
@@ -191,7 +192,7 @@ test("mobile layout and sidebar stay within the viewport", async ({ page }) => {
   await expect(page.locator(".sidebar")).not.toHaveClass(/open/);
   await expect(page.locator(".sidebar")).toHaveCSS(
     "transform",
-    "matrix(1, 0, 0, 1, -230, 0)",
+    "matrix(1, 0, 0, 1, -240, 0)",
   );
   expect(
     await page.evaluate(

@@ -1,7 +1,7 @@
 "use client";
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { HistoryPoint } from "@/types";
-import { EmptyState } from "./ui";
+import { captureTime } from "@/utils/telemetry";
 interface Series {
   id: string;
   name: string;
@@ -20,204 +20,178 @@ export function Chart({
   height?: number;
   unit?: string;
 }) {
-  const uid = useId().replace(/:/g, "");
-  const [hover, setHover] = useState<number | null>(null);
+  const uid = useId();
+  const plotRef = useRef<HTMLDivElement>(null);
+  const [chartWidth, setChartWidth] = useState(700);
+  useEffect(() => {
+    if (!plotRef.current) return;
+    const observer = new ResizeObserver(([entry]) =>
+      setChartWidth(Math.max(260, Math.round(entry.contentRect.width))),
+    );
+    observer.observe(plotRef.current);
+    return () => observer.disconnect();
+  }, []);
+  const [index, setIndex] = useState(0);
   const [hidden, setHidden] = useState<string[]>([]);
-  const visible = series.filter((s) => !hidden.includes(s.id));
-  const grouped = visible.map((s) => ({
-    ...s,
-    points: data.filter(
-      (p) => p.nodeId === s.id && Number.isFinite(p.readings[sensor]),
+  const times = [
+    ...new Set(
+      data.map((p) => Date.parse(p.timestamp)).filter(Number.isFinite),
     ),
-  }));
-  const all = grouped.flatMap((s) => s.points.map((p) => p.readings[sensor]));
-  if (!all.length && !hidden.length)
-    return (
-      <EmptyState
-        title="No readings in this period"
-        description="Choose another sensor or wait for the next telemetry update."
-      />
+  ].sort((a, b) => a - b);
+  const selected = Math.min(index, Math.max(0, times.length - 1));
+  const time = times[selected];
+  const visible = series.filter((s) => !hidden.includes(s.id));
+  const values = data
+    .filter((p) => visible.some((s) => s.id === p.nodeId))
+    .map((p) => p.readings[sensor])
+    .filter(Number.isFinite);
+  const low = Math.floor(Math.min(...(values.length ? values : [0])) - 2),
+    high = Math.ceil(Math.max(...(values.length ? values : [1])) + 2);
+  const left = 48,
+    width = chartWidth,
+    plot = chartWidth - 66,
+    top = 20,
+    bottom = height - 32;
+  const start = times[0] || 0,
+    end = times.at(-1) || start + 1;
+  const x = (t: number) => left + ((t - start) / (end - start || 1)) * plot;
+  const y = (v: number) => top + ((high - v) / (high - low)) * (bottom - top);
+  const lines = visible.map((s) => {
+    const points = data
+      .filter(
+        (p) => p.nodeId === s.id && Number.isFinite(Date.parse(p.timestamp)),
+      )
+      .sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
+    const intervals = points
+      .slice(1)
+      .map((p, i) => Date.parse(p.timestamp) - Date.parse(points[i].timestamp))
+      .filter((v) => v > 0)
+      .sort((a, b) => a - b);
+    const gap = Math.max(
+      30_000,
+      (intervals[Math.floor(intervals.length / 2)] || 30_000) * 2.5,
     );
-  const low = Math.floor(Math.min(...(all.length ? all : [0])) - 2),
-    high = Math.ceil(Math.max(...(all.length ? all : [1])) + 2);
-  const w = 700,
-    h = height,
-    left = 42,
-    right = 14,
-    top = 18,
-    bottom = 30;
-  const plotH = h - top - bottom,
-    plotW = w - left - right;
-  const sample = (points: HistoryPoint[]) => {
-    if (points.length <= 70) return points;
-    return Array.from(
-      { length: 70 },
-      (_, i) => points[Math.round((i * (points.length - 1)) / 69)],
-    );
-  };
-  const lines = grouped.map((s) => ({ ...s, points: sample(s.points) }));
-  const dates = lines.find((s) => s.points.length)?.points || [];
-  const hoverPoint =
-    hover !== null && dates.length
-      ? Math.round(hover * (dates.length - 1))
-      : null;
+    let previous = NaN,
+      drawing = false,
+      path = "";
+    for (const p of points) {
+      const t = Date.parse(p.timestamp),
+        value = p.readings[sensor];
+      if (!Number.isFinite(value)) {
+        drawing = false;
+        previous = t;
+        continue;
+      }
+      path += `${drawing && t - previous <= gap ? "L" : "M"}${x(t).toFixed(2)},${y(value).toFixed(2)} `;
+      drawing = true;
+      previous = t;
+    }
+    return { ...s, path, points };
+  });
   return (
-    <div className="chart-wrap">
+    <div className="chart-wrap" style={{ minHeight: height + 112 }}>
       <div
         className="chart-plot"
-        onMouseLeave={() => setHover(null)}
-        onMouseMove={(e) => {
-          const box = e.currentTarget.getBoundingClientRect();
-          setHover(
+        ref={plotRef}
+        onPointerDown={(e) => {
+          if (!times.length) return;
+          const r = e.currentTarget.getBoundingClientRect();
+          const t =
+            start +
             Math.max(
               0,
               Math.min(
                 1,
-                (((e.clientX - box.left) / box.width) * w - left) / plotW,
+                (((e.clientX - r.left) / r.width) * width - left) / plot,
               ),
-            ),
-          );
+            ) *
+              (end - start);
+          let nearest = 0;
+          times.forEach((v, i) => {
+            if (Math.abs(v - t) < Math.abs(times[nearest] - t)) nearest = i;
+          });
+          setIndex(nearest);
         }}
       >
         <svg
-          viewBox={`0 0 ${w} ${h}`}
+          viewBox={`0 0 ${width} ${height}`}
           role="img"
           aria-label={`${sensor} history chart`}
           preserveAspectRatio="none"
         >
-          <defs>
-            {lines.map((s) => (
-              <linearGradient
-                key={s.id}
-                id={`${uid}-${s.id}`}
-                x1="0"
-                y1="0"
-                x2="0"
-                y2="1"
-              >
-                <stop offset="0%" stopColor={s.color} stopOpacity=".12" />
-                <stop offset="100%" stopColor={s.color} stopOpacity="0" />
-              </linearGradient>
-            ))}
-          </defs>
+          <title>
+            {sensor} in {unit}; missing samples are gaps
+          </title>
           {Array.from({ length: 5 }, (_, i) => {
-            const y = top + (i * plotH) / 4;
+            const value = high - (i * (high - low)) / 4;
             return (
               <g key={i}>
                 <line
                   x1={left}
-                  x2={w - right}
-                  y1={y}
-                  y2={y}
+                  x2={width - 18}
+                  y1={y(value)}
+                  y2={y(value)}
                   stroke="var(--border)"
                   strokeDasharray="3 5"
                 />
                 <text
-                  x={left - 11}
-                  y={y + 4}
+                  x={left - 8}
+                  y={y(value) + 4}
                   textAnchor="end"
                   fill="var(--muted)"
-                  fontSize="10"
+                  fontSize={11}
                 >
-                  {(high - (i * (high - low)) / 4).toFixed(0)}
-                  {unit === "°C" || unit === "°F" ? "°" : ""}
+                  {value.toFixed(0)}
                 </text>
               </g>
             );
           })}
-          {lines.map((s) => {
-            const points = s.points.map(
-              (p, i) =>
-                `${left + (i / Math.max(1, s.points.length - 1)) * plotW},${top + ((high - p.readings[sensor]) / (high - low)) * plotH}`,
-            );
-            return (
-              <g key={s.id}>
-                {points.length > 1 && (
-                  <polygon
-                    points={`${left},${h - bottom} ${points.join(" ")} ${w - right},${h - bottom}`}
-                    fill={`url(#${uid}-${s.id})`}
-                  />
-                )}
-                <polyline
-                  points={points.join(" ")}
-                  stroke={s.color}
-                  fill="none"
-                  strokeWidth="2"
-                  strokeLinejoin="round"
-                  strokeLinecap="round"
-                />
-              </g>
-            );
-          })}
-          {Array.from({ length: 7 }, (_, i) => {
-            const p =
-              dates[Math.round((i / 6) * Math.max(0, dates.length - 1))];
-            return (
-              <text
-                key={i}
-                x={left + (i * plotW) / 6}
-                y={h - 7}
-                textAnchor="middle"
-                fill="var(--muted)"
-                fontSize="10"
-              >
-                {p
-                  ? new Date(p.timestamp).toLocaleTimeString("en-US", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      hour12: false,
-                    })
-                  : ""}
-              </text>
-            );
-          })}
-          {hover !== null && (
+          {lines.map((s) => (
+            <path
+              key={s.id}
+              d={s.path}
+              stroke={s.color}
+              strokeWidth={2.5}
+              fill="none"
+            />
+          ))}
+          {times.length > 0 && (
             <line
-              x1={left + hover * plotW}
-              x2={left + hover * plotW}
+              x1={x(time)}
+              x2={x(time)}
               y1={top}
-              y2={h - bottom}
+              y2={bottom}
               stroke="var(--muted)"
-              strokeDasharray="4 4"
+              strokeDasharray="3 5"
             />
           )}
+          {[0, 0.5, 1].map((f) => (
+            <text
+              key={f}
+              x={left + f * plot}
+              y={height - 8}
+              textAnchor="middle"
+              fill="var(--muted)"
+              fontSize={11}
+            >
+              {times.length
+                ? new Date(start + f * (end - start)).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : "—"}
+            </text>
+          ))}
         </svg>
-        {hoverPoint !== null && dates[hoverPoint] && (
-          <div
-            className="chart-tooltip"
-            style={{ left: `${Math.min(70, Math.max(6, (hover || 0) * 85))}%` }}
-          >
-            <small>
-              {new Date(dates[hoverPoint].timestamp).toLocaleString()}
-            </small>
-            {lines.map((s) => {
-              const p =
-                s.points[Math.round((hover || 0) * (s.points.length - 1))];
-              return (
-                p && (
-                  <div key={s.id}>
-                    <i style={{ background: s.color }} />
-                    {s.name}
-                    <b>
-                      {p.readings[sensor].toFixed(1)} {unit}
-                    </b>
-                  </div>
-                )
-              );
-            })}
-          </div>
-        )}
       </div>
       <div className="chart-legend">
         {series.map((s) => (
           <button
             key={s.id}
-            style={{ opacity: hidden.includes(s.id) ? 0.35 : 1 }}
+            aria-pressed={!hidden.includes(s.id)}
             onClick={() =>
-              setHidden((current) =>
-                current.includes(s.id)
-                  ? current.filter((id) => id !== s.id)
-                  : [...current, s.id],
+              setHidden((h) =>
+                h.includes(s.id) ? h.filter((id) => id !== s.id) : [...h, s.id],
               )
             }
           >
@@ -225,7 +199,47 @@ export function Chart({
             {s.name}
           </button>
         ))}
-        <span>{unit}</span>
+        <span>{unit} · gaps = missing samples</span>
+      </div>
+      <label className="chart-scrubber" htmlFor={uid}>
+        Inspect reading
+        <input
+          id={uid}
+          aria-label={`${sensor} sample`}
+          type="range"
+          min={0}
+          max={Math.max(0, times.length - 1)}
+          value={selected}
+          disabled={!times.length}
+          aria-valuetext={
+            times.length
+              ? captureTime(new Date(time).toISOString())
+              : "No readings"
+          }
+          onChange={(e) => setIndex(Number(e.target.value))}
+        />
+      </label>
+      <div className="chart-readout" aria-live="polite">
+        <time>
+          {times.length
+            ? captureTime(new Date(time).toISOString())
+            : "No readings in this period"}
+        </time>
+        {lines.map((s) => {
+          const p = s.points.find((p) => Date.parse(p.timestamp) === time);
+          const value = p?.readings[sensor];
+          return (
+            <span key={s.id}>
+              {s.name}:{" "}
+              <strong>
+                {typeof value === "number" && Number.isFinite(value)
+                  ? value.toFixed(1)
+                  : "—"}{" "}
+                {unit}
+              </strong>
+            </span>
+          );
+        })}
       </div>
     </div>
   );

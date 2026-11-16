@@ -19,7 +19,13 @@ import { defaultSettings } from "@/config/dashboard";
 import { DemoDataService, emptySnapshot } from "@/services/DemoDataService";
 import { LiveApiService } from "@/services/LiveApiService";
 import { WebSocketService } from "@/services/WebSocketService";
+import type { DetectionEvent } from "@/features/media/contracts";
+import { eventAlert } from "@/features/media/contracts";
+import { isFresh, thresholdAlerts } from "@/utils/telemetry";
+import { useClock } from "@/hooks/useClock";
 interface DashboardContext {
+  mediaEvents: DetectionEvent[];
+  receiveEvents: (events: DetectionEvent[]) => void;
   data: Snapshot;
   settings: Settings;
   loading: boolean;
@@ -36,6 +42,22 @@ interface DashboardContext {
 }
 const Context = createContext<DashboardContext | null>(null);
 export function DashboardProvider({ children }: { children: ReactNode }) {
+  const now = useClock();
+  const [mediaEvents, setMediaEvents] = useState<DetectionEvent[]>([]);
+  const receiveEvents = useCallback(
+    (events: DetectionEvent[]) =>
+      setMediaEvents((old) =>
+        Array.from(
+          new Map(
+            [...old, ...events].map((e) => [e.nodeId + ":" + e.id, e]),
+          ).values(),
+        )
+          .sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp))
+          .slice(0, 200),
+      ),
+    [],
+  );
+  const crossings = useRef(new Map<string, string>());
   const [data, setData] = useState<Snapshot>(emptySnapshot);
   const [settings, setSettings] = useState<Settings>(defaultSettings);
   const [ready, setReady] = useState(false);
@@ -47,6 +69,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [version, setVersion] = useState(0);
   const [toast, setToast] = useState("");
   const actions = useRef<Record<string, Alert["state"]>>({});
+  const [actionStates, setActionStates] = useState<
+    Record<string, Alert["state"]>
+  >({});
   const demo = useRef<DemoDataService | null>(null);
   const notify = useCallback((message: string) => setToast(message), []);
   useEffect(() => {
@@ -57,6 +82,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true;
     if (process.env.NEXT_PUBLIC_STATIC_PREVIEW === "1") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- static preview has no persistence service to await.
       setReady(true);
       return;
     }
@@ -108,6 +134,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       process.env.NEXT_PUBLIC_STATIC_PREVIEW === "1" &&
       settings.mode === "live"
     ) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- switching transport must clear the previous mode snapshot immediately.
       setData(emptySnapshot());
       setError(
         "Hosted preview has no local gateway backend. Run the repository locally to connect hardware.",
@@ -117,19 +144,38 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     }
     let active = true;
     let busy = false;
+    const controller = new AbortController();
+    crossings.current.clear();
+    setMediaEvents([]);
+    setActionStates({});
     if (!demo.current) demo.current = new DemoDataService(settings);
     demo.current.updateSettings(settings);
     const service =
       settings.mode === "demo"
         ? demo.current
-        : new LiveApiService(settings.apiEndpoint);
+        : new LiveApiService(settings.apiEndpoint, controller.signal);
     setData(emptySnapshot());
     setLoading(true);
     setError("");
     const accept = (snapshot: Snapshot) => {
       if (!active) return;
+      const generated =
+        settings.mode === "live"
+          ? thresholdAlerts(snapshot, settings, crossings.current)
+          : [];
       setData((previous) => ({
         ...snapshot,
+        gateways: snapshot.gateways.length
+          ? snapshot.gateways
+          : previous.gateways,
+        nodes: snapshot.nodes.map((node) => {
+          const newer = previous.nodes.find(
+            (p) =>
+              p.id === node.id &&
+              Date.parse(p.lastSeen) > Date.parse(node.lastSeen),
+          );
+          return newer || node;
+        }),
         history:
           settings.mode === "live"
             ? Array.from(
@@ -152,7 +198,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         alerts: (settings.mode === "live"
           ? Array.from(
               new Map(
-                [...previous.alerts, ...snapshot.alerts].map((a) => [a.id, a]),
+                [...previous.alerts, ...snapshot.alerts, ...generated].map(
+                  (a) => [a.id, a],
+                ),
               ).values(),
             )
           : snapshot.alerts
@@ -197,6 +245,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       active = false;
       clearInterval(timer);
       ws.disconnect();
+      controller.abort();
     };
   }, [ready, settings, paused, version]);
 
@@ -209,7 +258,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         return true;
       }
 
-      // Try saving to database, but don't block mode switching
+      // Session preferences remain usable when persistence is unavailable.
+      let persisted = false;
       try {
         const response = await fetch("/api/settings", {
           method: "PUT",
@@ -219,6 +269,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
         if (response.ok) {
           setDatabase(true);
+          persisted = true;
         } else {
           setDatabase(false);
         }
@@ -227,9 +278,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       }
 
       notify(
-        next.mode === "live"
-          ? "Switched to Live Mode"
-          : "Switched to Demo Mode",
+        persisted
+          ? "Settings saved"
+          : "Settings applied for this session. PostgreSQL is unavailable; changes are not saved.",
       );
 
       return true;
@@ -241,9 +292,20 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   const updateAlert = async (id: string, state: Alert["state"]) => {
     try {
+      if (
+        settings.mode === "live" &&
+        (id.startsWith("threshold:") || id.startsWith("media:"))
+      ) {
+        notify(
+          "Review this observation in Incident review; saving requires workspace access.",
+        );
+        return;
+      }
       if (settings.mode === "live")
         await new LiveApiService(settings.apiEndpoint).updateAlert(id, state);
-      else {
+      else if (process.env.NEXT_PUBLIC_STATIC_PREVIEW === "1") {
+        actions.current[id] = state;
+      } else {
         const response = await fetch("/api/alerts", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -252,11 +314,14 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         if (!response.ok) throw new Error("Unable to save alert action");
         actions.current[id] = state;
       }
+      setActionStates((old) => ({ ...old, [id]: state }));
       setData((current) => ({
         ...current,
         alerts: current.alerts.map((a) => (a.id === id ? { ...a, state } : a)),
       }));
-      notify(`Alert ${state}`);
+      notify(
+        `Alert ${state}${process.env.NEXT_PUBLIC_STATIC_PREVIEW === "1" ? " for this demo session" : ""}`,
+      );
     } catch (e) {
       notify(e instanceof Error ? e.message : "Action failed");
     }
@@ -279,7 +344,58 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   return (
     <Context.Provider
       value={{
-        data,
+        data: {
+          ...data,
+          gateways:
+            settings.mode === "live"
+              ? data.gateways.map((g) =>
+                  isFresh(
+                    g.lastSeen,
+                    Math.max(now, Date.parse(data.timestamp) || 0),
+                  )
+                    ? g
+                    : {
+                        ...g,
+                        status: "offline",
+                        cpu: NaN,
+                        ram: NaN,
+                        storage: NaN,
+                        temperature: NaN,
+                      },
+                )
+              : data.gateways,
+          nodes:
+            settings.mode === "live"
+              ? data.nodes.map((node) =>
+                  node.status !== "offline" &&
+                  isFresh(
+                    node.lastSeen,
+                    Math.max(now, Date.parse(data.timestamp) || 0),
+                  )
+                    ? node
+                    : {
+                        ...node,
+                        status: "offline",
+                        readings: Object.fromEntries(
+                          Object.keys(node.readings).map((key) => [key, NaN]),
+                        ),
+                      },
+                )
+              : data.nodes,
+          alerts: [
+            ...data.alerts,
+            ...mediaEvents
+              .filter(
+                (e) =>
+                  !data.alerts.some(
+                    (a) => a.evidence?.id === e.id && a.nodeId === e.nodeId,
+                  ),
+              )
+              .map(eventAlert),
+          ].map((a) => ({ ...a, state: actionStates[a.id] || a.state })),
+        },
+        mediaEvents,
+        receiveEvents,
         settings,
         loading,
         error,

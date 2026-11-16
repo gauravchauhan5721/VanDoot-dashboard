@@ -41,7 +41,7 @@ export function Simulation() {
   frame=requestAnimationFrame(animate);
   return()=>{alive=false;cancelAnimationFrame(frame);unsubscribe();scene.dispose();forest.current=null;engine.current=null;};
  },[]);
- useEffect(()=>{if(snapshot)forest.current?.update({...snapshot,selectedNode:selectedRef.current});},[selected,snapshot?.scenario,snapshot?.phase]);
+ useEffect(()=>{if(snapshot)forest.current?.update({...snapshot,selectedNode:selectedRef.current});},[selected,snapshot]);
  const chooseScenario=(id:string)=>{const item=SCENARIOS.find((s:{id:string;proposedOnly:boolean})=>s.id===id);if(item?.proposedOnly&&snapshot?.phase!=='proposed')engine.current?.setPhase('proposed');engine.current?.trigger(id);};
  const display = snapshot && liveMode ? overlayLiveTelemetry(snapshot, data, liveNodeMap, now) : snapshot;
  const node=display?.nodes.find(n=>n.id===selected);

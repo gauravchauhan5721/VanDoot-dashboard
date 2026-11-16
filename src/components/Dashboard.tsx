@@ -19,28 +19,64 @@ import { MapPage } from "@/features/MapPage";
 import { Intelligence } from "@/features/Intelligence";
 import { DeviceControl, Reports } from "@/features/Operations";
 import { Settings } from "@/features/Settings";
-import { Simulation } from "@/features/Simulation";
+import dynamic from "next/dynamic";
+import { ForestWorkspace } from "@/features/forest/ForestWorkspace";
+import { modules, ForestModule } from "@/features/forest/contracts";
+const Simulation = dynamic(
+  () => import("@/features/Simulation").then((m) => m.Simulation),
+  { ssr: false, loading: () => <LoadingState /> },
+);
 import { EmptyState, LoadingState, Panel } from "./ui";
 function Application() {
   const [view, setView] = useState("overview");
   const { loading, data, error } = useDashboard();
   useEffect(() => {
-    const navigate = () => {
-      setView(decodeURIComponent(window.location.hash.slice(1)) || "overview");
+    const navigate = (event?: HashChangeEvent) => {
+      if (event && window.location.hash.startsWith("#alerts/"))
+        window.history.replaceState(
+          { ...window.history.state, vandootEvidence: true },
+          "",
+        );
+      setView(window.location.hash.slice(1) || "overview");
       window.scrollTo({ top: 0, behavior: "instant" });
     };
     navigate();
     window.addEventListener("hashchange", navigate);
     return () => window.removeEventListener("hashchange", navigate);
   }, []);
-  const [page, id, extra] = view.split("/");
+  const [path, query = ""] = view.split("?");
+  const [page, rawId, extra] = path.split("/");
+  let id: string | undefined = rawId;
+  let detailId: string | undefined;
+  try {
+    id = rawId ? decodeURIComponent(rawId) : rawId;
+    detailId = extra ? decodeURIComponent(extra) : undefined;
+  } catch {
+    id = undefined;
+  }
   let content;
   switch (page) {
+    case "forest":
+      content = modules.includes(id as ForestModule) ? (
+        <ForestWorkspace
+          key={
+            id +
+            (extra || "") +
+            Boolean(data.alerts.find((a) => a.id === detailId))
+          }
+          module={id as ForestModule}
+          queryString={query}
+          alertId={detailId}
+        />
+      ) : (
+        <EmptyState title="Unknown forest workspace" />
+      );
+      break;
     case "node-media":
-      content = <NodeMedia />;
+      content = <NodeMedia nodeId={id} />;
       break;
     case "overview":
-      content = <Overview />;
+      content = <Overview nodeId={id} />;
       break;
     case "live-monitoring":
       content = <LiveMonitoring />;
@@ -61,10 +97,10 @@ function Application() {
       content = <SensorsPage />;
       break;
     case "analytics":
-      content = <Analytics key={view} sensorId={id} nodeId={extra} />;
+      content = <Analytics key={view} sensorId={id} nodeId={detailId} />;
       break;
     case "alerts":
-      content = <Alerts key={view} alertId={id} />;
+      content = <Alerts alertId={id} queryString={query} />;
       break;
     case "map":
       content = <MapPage />;
@@ -106,9 +142,13 @@ function Application() {
     <DashboardLayout view={view}>
       {loading &&
       !data.nodes.length &&
-      !["settings", "system-health", "simulation", "node-media"].includes(
-        page,
-      ) ? (
+      ![
+        "settings",
+        "system-health",
+        "simulation",
+        "node-media",
+        "forest",
+      ].includes(page) ? (
         <LoadingState />
       ) : error &&
         !data.nodes.length &&

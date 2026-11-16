@@ -38,6 +38,7 @@ export function DeviceControl({ targetId }: { targetId?: string }) {
   const selectedTarget = target || devices[0]?.id || "";
   useEffect(() => {
     if (settings.mode !== "demo") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clear external command history on transport change.
       setHistory([]);
       return;
     }

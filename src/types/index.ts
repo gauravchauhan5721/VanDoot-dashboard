@@ -1,3 +1,4 @@
+import type { DetectionEvent } from "@/features/media/contracts";
 export type Mode = "demo" | "live";
 export type Status = "online" | "weak" | "offline";
 export interface SensorDefinition {
@@ -8,6 +9,9 @@ export interface SensorDefinition {
   min: number;
   max: number;
   precision: number;
+  aliases?: string[];
+  hardware?: string;
+  featured?: boolean;
 }
 export interface Location {
   lat: number;
@@ -60,6 +64,9 @@ export interface NetworkLink {
   traffic: number;
 }
 export interface Alert {
+  evidence?: DetectionEvent;
+  readings?: { sensor: string; value: number; timestamp: string }[];
+  reviewRequired?: boolean;
   id: string;
   nodeId: string;
   title: string;

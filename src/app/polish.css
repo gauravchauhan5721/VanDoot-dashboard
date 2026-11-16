@@ -1,30 +1,5 @@
 /* Presentation-only refinement. Existing routes, controls and data are retained. */
-:root {
-  --bg: #101514;
-  --sidebar: #141b18;
-  --panel: #19211e;
-  --panel-raised: #202b25;
-  --border: #303c34;
-  --text: #edf3ed;
-  --muted: #9aa99e;
-  --muted-light: #bdc9c0;
-  --green: #b7df82;
-  --green-dim: #293b24;
-  --font-body: "DM Sans", Inter, "Segoe UI", sans-serif;
-  --font-heading: "Manrope", Inter, "Segoe UI", sans-serif;
-}
-:root[data-theme="light"] {
-  --bg: #f3f6f2;
-  --sidebar: #fcfdfb;
-  --panel: #fff;
-  --panel-raised: #edf2eb;
-  --border: #d7e0d4;
-  --text: #223128;
-  --muted: #637366;
-  --muted-light: #4e6053;
-  --green: #47732d;
-  --green-dim: #e7f0df;
-}
+/* Theme tokens live in globals.css. This file owns layout refinements only. */
 body {
   font-size: 13px;
   line-height: 1.5;

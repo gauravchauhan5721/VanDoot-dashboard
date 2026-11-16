@@ -2,16 +2,16 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #111413;
-  --sidebar: #151817;
-  --panel: #191c1a;
-  --panel-raised: #202420;
-  --border: #2b302c;
-  --text: #edf0eb;
-  --muted: #8c948d;
+  --bg: #0d1713;
+  --sidebar: #101e17;
+  --panel: #16251d;
+  --panel-raised: #1c3025;
+  --border: #2d4235;
+  --text: #f3f2e9;
+  --muted: #a0b1a4;
   --muted-light: #acb3ad;
-  --green: #b7df82;
-  --green-dim: #253222;
+  --green: #b4df81;
+  --green-dim: #293e23;
   --cyan: #74c2d5;
   --purple: #b3a4d7;
   --amber: #e5b868;
@@ -21,8 +21,8 @@
   --map-grid: #35413a;
   --map-road: #2e3932;
   --map-building: #243229;
-  --font-body: "DM Sans", sans-serif;
-  --font-heading: "Manrope", sans-serif;
+  --font-body: "DM Sans", "Segoe UI", sans-serif;
+  --font-heading: "Manrope", "Segoe UI", sans-serif;
   color-scheme: dark;
 }
 :root[data-theme="light"] {
@@ -32,7 +32,7 @@
   --panel-raised: #f0f3ec;
   --border: #dce2d7;
   --text: #253025;
-  --muted: #727b70;
+  --muted: #586b59;
   --muted-light: #596550;
   --green: #527f2b;
   --green-dim: #e8f1de;

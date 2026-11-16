@@ -1,4 +1,5 @@
 "use client";
+import { finite } from "@/utils/format";
 import { useMemo, useState } from "react";
 import { Maximize, Minus, Plus, Radio, RotateCcw } from "lucide-react";
 import { useDashboard } from "@/hooks/useDashboard";
@@ -87,7 +88,7 @@ export function NetworkTopology({ large = false }: { large?: boolean }) {
                   fontSize="10"
                   fill={color}
                 >
-                  {link.rssi.toFixed(0)} dBm
+                  {finite(link.rssi, 0)} dBm
                 </text>
               </g>
             );
@@ -234,7 +235,7 @@ export function NetworkTopology({ large = false }: { large?: boolean }) {
                   fontSize="10"
                   fill="var(--muted)"
                 >
-                  ESP32 · {n.readings.battery.toFixed(0)}% battery
+                  ESP32 · {finite(n.readings.battery, 0)}% battery
                 </text>
               </g>
             );
@@ -301,8 +302,8 @@ export function NetworkTopology({ large = false }: { large?: boolean }) {
             <p>{node?.location.label || gateway?.location.label}</p>
             {node && (
               <p>
-                RSSI {node.readings.rssi} dBm · SNR {node.readings.snr} dB ·
-                Link quality {node.linkQuality}%<br />
+                RSSI {finite(node.readings.rssi, 0)} dBm · SNR {finite(node.readings.snr)} dB ·
+                Link quality {finite(node.linkQuality, 0)}%<br />
                 Parent / next hop: {node.parentId}
                 <br />
                 {node.packets.toLocaleString()} packets transmitted

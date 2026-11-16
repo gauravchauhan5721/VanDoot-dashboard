@@ -71,12 +71,16 @@ export class DemoDataService implements DataService {
       ),
     );
     this.data.alerts = [
+      { id: "demo-evidence", nodeId: nodeConfigs[1]?.id || nodeConfigs[0].id, title: "Possible fire · review evidence", message: "Scripted demo: fire visible near the river trail. Review the sample image and sensor context. This is not a model prediction or a real incident.", severity: "critical", timestamp: new Date(now - 15000).toISOString(), state: "active", reviewRequired: true,
+        evidence: { id: "demo-fire-frame", nodeId: nodeConfigs[1]?.id || nodeConfigs[0].id, timestamp: new Date(now-15000).toISOString(), type: "camera", label: "Illustrative fire scenario", imageUrl: "/demo/camera-poster.jpg", audioUrl: "/demo/forest.wav", simulated: true },
+        readings: [{ sensor: "temperature", value: 40.8, timestamp: new Date(now-16000).toISOString() }, { sensor: "pm25", value: 82, timestamp: new Date(now-18000).toISOString() }]
+      },
       {
         id: "demo-temperature",
         nodeId: nodeConfigs[1]?.id || nodeConfigs[0]?.id || "SYSTEM",
         title: "Temperature threshold exceeded",
         message:
-          "Temperature briefly reached 35.8 °C in Zone B. Current readings have returned to the normal range. Review ventilation and acknowledge this event.",
+          "Temperature briefly reached 35.8 °C in Zone B. Current readings have returned to the normal range. Review the sensor context and acknowledge this event.",
         severity: "warning",
         timestamp: new Date(now - 120000).toISOString(),
         state: "active",

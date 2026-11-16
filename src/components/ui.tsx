@@ -6,6 +6,7 @@ import {
   X,
   Inbox,
   LoaderCircle,
+  CircleCheck, TriangleAlert, CircleX, Info,
 } from "lucide-react";
 export function StatusBadge({
   status,
@@ -31,7 +32,7 @@ export function StatusBadge({
         : "blue";
   return (
     <span className={`badge ${color}`}>
-      <i />
+      {color === "red" ? <CircleX size={12} /> : color === "amber" ? <TriangleAlert size={12} /> : color === "green" ? <CircleCheck size={12} /> : <Info size={12} />}
       {label || status}
     </span>
   );
@@ -210,12 +211,12 @@ export function Meter({
     <div className="meter">
       <div>
         <span>{label}</span>
-        <strong>{detail || `${value.toFixed(0)}%`}</strong>
+        <strong>{detail || (Number.isFinite(value) ? `${value.toFixed(0)}%` : "—")}</strong>
       </div>
       <div className="meter-track">
         <i
           style={{
-            width: `${Math.min(100, Math.max(0, value))}%`,
+            width: `${Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : 0}%`,
             background: color,
           }}
         />
