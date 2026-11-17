@@ -50,10 +50,18 @@ export function useNodeMedia(nodeId: string) {
         }
       }
       if (published) {
-        const oldLocal = /^http:\/\/(localhost|127\.0\.0\.1):8765\//;
-        if (next.camera === published.oldStream || oldLocal.test(next.camera))
+        // An old raw ESP32 or laptop feed cannot supply the hosted Pi detections.
+        if (
+          !next.camera ||
+          next.camera === published.oldStream ||
+          next.camera.startsWith("http:")
+        )
           next.camera = published.camera;
-        if (oldLocal.test(next.events)) next.events = published.events;
+        if (
+          next.camera === published.camera &&
+          (!next.events || next.events.startsWith("http:"))
+        )
+          next.events = published.events;
       }
       setSource(next);
     } catch {
