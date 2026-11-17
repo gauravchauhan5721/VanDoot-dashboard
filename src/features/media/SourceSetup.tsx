@@ -9,7 +9,7 @@ import {
   parseThermal,
 } from "./contracts";
 const labels: Record<SourceKind, string> = {
-  camera: "ESP32-CAM MJPEG URL",
+  camera: "ESP32-CAM live feed URL (MJPEG or JPEG)",
   image: "Latest detection image URL",
   thermal: "MLX90640 thermal JSON URL",
   audio: "Microphone audio URL",

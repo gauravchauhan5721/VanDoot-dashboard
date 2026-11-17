@@ -23,6 +23,7 @@ import type { DetectionEvent } from "@/features/media/contracts";
 import { eventAlert } from "@/features/media/contracts";
 import { isFresh, thresholdAlerts } from "@/utils/telemetry";
 import { useClock } from "@/hooks/useClock";
+import { hostedCamera } from "@/config/hostedCamera";
 interface DashboardContext {
   mediaEvents: DetectionEvent[];
   receiveEvents: (events: DetectionEvent[]) => void;
@@ -153,7 +154,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     const service =
       settings.mode === "demo"
         ? demo.current
-        : new LiveApiService(settings.apiEndpoint, controller.signal);
+        : new LiveApiService(
+            settings.apiEndpoint || hostedCamera()?.gateway || "",
+            controller.signal,
+          );
     setData(emptySnapshot());
     setLoading(true);
     setError("");

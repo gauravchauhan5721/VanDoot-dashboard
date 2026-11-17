@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { useDashboard } from "@/hooks/useDashboard";
+import { hostedCamera } from "@/config/hostedCamera";
 import {
   blankSource,
   MediaSource,
@@ -27,11 +28,20 @@ export function useNodeMedia(nodeId: string) {
     setErrors({});
     setModelStatus("unknown");
     setRunning(true);
+    const installation = hostedCamera();
+    const published =
+      !demo && installation?.nodeId === nodeId ? installation : undefined;
+    const defaults = {
+      ...blankSource,
+      ...(published
+        ? { camera: published.camera, events: published.events }
+        : {}),
+    };
     try {
       const saved = JSON.parse(
         localStorage.getItem(`vandoot-media-${settings.mode}`) || "{}",
       );
-      const next = { ...blankSource, ...saved[nodeId] };
+      const next = { ...defaults, ...saved[nodeId] };
       for (const key of Object.keys(blankSource) as (keyof MediaSource)[]) {
         try {
           next[key] = safeMediaURL(next[key]);
@@ -39,15 +49,21 @@ export function useNodeMedia(nodeId: string) {
           next[key] = "";
         }
       }
+      if (published) {
+        const oldLocal = /^http:\/\/(localhost|127\.0\.0\.1):8765\//;
+        if (next.camera === published.oldStream || oldLocal.test(next.camera))
+          next.camera = published.camera;
+        if (oldLocal.test(next.events)) next.events = published.events;
+      }
       setSource(next);
     } catch {
-      setSource(blankSource);
+      setSource(defaults);
       setErrors({
         settings: "Saved URLs could not be read. Configure sources to recover.",
       });
     }
     setReady(true);
-  }, [nodeId, settings.mode]);
+  }, [nodeId, settings.mode, demo]);
   const save = useCallback(
     (next: MediaSource) => {
       const key = `vandoot-media-${settings.mode}`;
